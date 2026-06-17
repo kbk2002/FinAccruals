@@ -1,0 +1,19 @@
+{
+  "name": "finaccruals",
+  "version": "1.0.0",
+  "description": "FinAccruals Excel Add-in MVP shared development environment",
+  "private": true,
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "npx http-server . -p 3000 -c-1",
+    "validate": "office-addin-manifest validate manifest.xml"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  },
+  "devDependencies": {
+    "http-server": "latest",
+    "office-addin-manifest": "latest",
+    "vercel": "latest"
+  }
+}

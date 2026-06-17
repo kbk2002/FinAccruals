@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinAccruals</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <link rel="stylesheet" href="taskpane.css" />
+  <script src="taskpane.js" defer></script>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">FA</div>
+    <div>
+      <h1>FinAccruals</h1>
+      <p>Excel Add-in MVP</p>
+    </div>
+  </header>
+
+  <main class="content">
+    <section class="card">
+      <h2>Environment Status</h2>
+      <p id="office-status">Checking Office.js...</p>
+      <p id="api-status">Checking API...</p>
+      <button id="btn-health">Test Backend</button>
+    </section>
+
+    <section class="card">
+      <h2>MVP Scope</h2>
+      <ul>
+        <li>Office.js taskpane</li>
+        <li>Shared Vercel deployment</li>
+        <li>Supabase-ready backend</li>
+        <li>Future QuickBooks/Xero integration</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
