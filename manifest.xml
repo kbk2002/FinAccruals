@@ -12,12 +12,12 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="FinAccruals" />
   <Description DefaultValue="Excel Add-in MVP for accounting automation and journal entry processing." />
-  <IconUrl DefaultValue="https://YOUR_VERCEL_URL/assets/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://YOUR_VERCEL_URL/assets/icon-64.png" />
-  <SupportUrl DefaultValue="https://YOUR_VERCEL_URL" />
+  <IconUrl DefaultValue="https://fin-accruals.vercel.app/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://fin-accruals.vercel.app/assets/icon-64.png" />
+  <SupportUrl DefaultValue="https://fin-accruals.vercel.app" />
 
   <AppDomains>
-    <AppDomain>https://YOUR_VERCEL_URL</AppDomain>
+    <AppDomain>https://fin-accruals.vercel.app</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -25,7 +25,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://YOUR_VERCEL_URL/src/taskpane/taskpane.html" />
+    <SourceLocation DefaultValue="https://fin-accruals.vercel.app/src/taskpane/taskpane.html" />
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -76,14 +76,14 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://YOUR_VERCEL_URL/assets/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://YOUR_VERCEL_URL/assets/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://YOUR_VERCEL_URL/assets/icon-64.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://fin-accruals.vercel.app/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://fin-accruals.vercel.app/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://fin-accruals.vercel.app/assets/icon-64.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://YOUR_VERCEL_URL"/>
-        <bt:Url id="Commands.Url" DefaultValue="https://YOUR_VERCEL_URL/src/commands/commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://YOUR_VERCEL_URL/src/taskpane/taskpane.html"/>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://fin-accruals.vercel.app"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://fin-accruals.vercel.app/src/commands/commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://fin-accruals.vercel.app/src/taskpane/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="FinAccruals is ready"/>
