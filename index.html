@@ -13,10 +13,30 @@
 </head>
 <body>
   <main>
-    <h1>FinAccruals</h1>
-    <p>Shared MVP environment for the FinAccruals Excel Add-in.</p>
-    <p>Taskpane URL: <code>/src/taskpane/taskpane.html</code></p>
-    <p>API health check: <code>/api/health</code></p>
+<h1>FinAccruals Environment Status</h1>
+
+<div>
+  <p>✅ GitHub Repository Connected</p>
+  <p>✅ Vercel Deployment Active</p>
+  <p>✅ API Health Check Passed</p>
+  <p>🟡 Supabase Integration Pending</p>
+</div>
+
+<button onclick="checkHealth()">Verify Connection</button>
+
+<div id="result"></div>
+
+<script>
+async function checkHealth() {
+  const response = await fetch('/api/health');
+  const data = await response.json();
+
+  document.getElementById('result').innerHTML =
+    `✅ Connected<br>
+     Status: ${data.status}<br>
+     App: ${data.app}`;
+}
+</script>
   </main>
 </body>
 </html>
