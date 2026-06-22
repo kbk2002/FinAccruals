@@ -1,6 +1,7 @@
 /* global Office, Excel, document, fetch, console */
 
 const API_BASE = "https://fin-accruals.vercel.app/api";
+let isQboConnected = false;
 
 Office.onReady(() => {
   initializeTabs();
@@ -47,14 +48,31 @@ function setAuthBadge(text, variant = "primary") {
   const statusText = document.getElementById("authStatusText");
   badge.textContent = text;
   badge.className = `status-badge badge--${variant}`;
-  statusText.textContent = variant === "primary" ? "Demo company" : "—";
+  statusText.textContent = variant === "primary" ? "Demo company" : "Not selected";
 }
 
 /* 1. Demo Connect to QBO */
 
 async function handleConnectQBO() {
-  setStatus("Demo QuickBooks connection active.", "success");
-  setAuthBadge("Connected", "primary");
+  const button = document.getElementById("btnConnectQBO");
+  const action = button.querySelector(".connector-cta");
+
+  isQboConnected = !isQboConnected;
+
+  if (isQboConnected) {
+    button.classList.add("is-connected");
+    button.setAttribute("aria-pressed", "true");
+    action.textContent = "Disconnect";
+    setStatus("Demo QuickBooks connection active.", "success");
+    setAuthBadge("Connected", "primary");
+    return;
+  }
+
+  button.classList.remove("is-connected");
+  button.setAttribute("aria-pressed", "false");
+  action.textContent = "Connect";
+  setStatus("QuickBooks disconnected from this workbook.", "info");
+  setAuthBadge("Not connected", "neutral");
 }
 
 /* 2. Pull master data */

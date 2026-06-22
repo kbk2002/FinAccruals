@@ -386,6 +386,17 @@ button.connector {
   box-shadow: 0 6px 16px rgba(53, 109, 255, 0.08);
 }
 
+.connector--active.is-connected {
+  border-color: #9ed6c1;
+  background: var(--success-soft);
+  box-shadow: 0 6px 16px rgba(23, 128, 90, 0.08);
+}
+
+.connector--active.is-connected .connector-cta {
+  background: white;
+  color: var(--danger);
+}
+
 .connector--disabled {
   opacity: 0.62;
 }
