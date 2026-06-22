@@ -1,29 +1,77 @@
   FinAccruals / LedgerFlow Excel Add-in
 
-FinAccruals, also called LedgerFlow, is a Microsoft Excel Add-in built with Office.js. The current version focuses on the Excel add-in frontend structure, task pane interface, workbook interaction, and deployment setup.
+FinAccruals (LedgerFlow) is a Microsoft Excel Add-in built with Office.js to streamline accounting workflows directly within Excel. The current implementation provides a working Excel add-in with frontend functionality, workbook interaction, deployed API endpoints, and Excel-to-backend integration.
 
    Current Status
 
-The project is currently in the frontend foundation phase. It includes the Excel add-in structure, UI screens, workbook template creation, basic journal entry validation, and Vercel deployment configuration.
+The project has completed the initial frontend and API integration phase. Users can pull master data into Excel, create journal entry templates, validate journal entries, submit demo journal entries, and retrieve submission history using deployed Vercel API endpoints.
 
    What Has Been Completed
 
-* Created Office.js Excel Add-in project structure.
-* Built the LedgerFlow task pane UI.
-* Added Excel ribbon button support through `manifest.xml`.
-* Configured icons and add-in branding.
-* Added Webpack build setup.
-* Connected the deployment URL to Vercel.
-* Updated manifest URLs for production deployment.
-* Added workbook interaction for creating a `JE_Template` sheet.
-* Added basic client-side debit and credit balance validation.
-* Added frontend placeholders for:
+    Excel Add-in Foundation
 
-  * QuickBooks connection
-  * Pulling accounts
-  * Pulling vendors
-  * Submitting journal entries
-  * Loading submission history
+* Created Office.js Excel Add-in project structure.
+* Built the LedgerFlow task pane interface.
+* Added Excel ribbon integration through `manifest.xml`.
+* Configured add-in branding and icons.
+* Configured Webpack build pipeline.
+* Connected GitHub repository to Vercel deployment.
+* Updated production manifest URLs.
+
+    Excel Workbook Integration
+
+* Created automated `Accounts` worksheet generation.
+* Created automated `Vendors` worksheet generation.
+* Created automated `Classes` worksheet generation.
+* Created `JE_Template` worksheet generation.
+* Added workbook data writing using Office.js APIs.
+
+    Journal Entry Workflow
+
+* Added journal entry template creation.
+* Implemented debit and credit balance validation.
+* Added journal entry submission workflow.
+* Added submission history display.
+* Added validation status messaging.
+
+    Backend API Integration
+
+* Deployed backend API routes on Vercel.
+* Added API health endpoint.
+* Added Accounts API endpoint.
+* Added Vendors API endpoint.
+* Added Classes API endpoint.
+* Added Submission History API endpoint.
+* Connected Excel Add-in frontend to deployed API endpoints.
+
+    Master Data Functionality
+
+* Pull Accounts from API into Excel.
+* Pull Vendors from API into Excel.
+* Pull Classes from API into Excel.
+* Populate dedicated worksheets automatically.
+
+   Current Working Features
+
+✅ Connect to QuickBooks (Demo Mode)
+
+✅ Pull Accounts
+
+✅ Pull Vendors
+
+✅ Pull Classes
+
+✅ Create Journal Entry Template
+
+✅ Validate Journal Entry Balance
+
+✅ Submit Demo Journal Entry
+
+✅ Load Submission History
+
+✅ Excel ↔ API Integration
+
+✅ Vercel Deployment
 
    Tech Stack
 
@@ -32,7 +80,7 @@ The project is currently in the frontend foundation phase. It includes the Excel
 * CSS
 * Office.js
 * Webpack
-* Vercel
+* Vercel Serverless Functions
 * GitHub
 
    Project Structure
@@ -48,6 +96,13 @@ src/
 │   ├── commands.html
 │   └── commands.js
 
+api/
+├── health.js
+├── accounts.js
+├── vendors.js
+├── classes.js
+├── history.js
+
 assets/
 ├── icon-16.png
 ├── icon-32.png
@@ -62,52 +117,200 @@ package.json
 
    Deployment
 
-The project is deployed on Vercel.
-
-Important URLs:
+Production URLs:
 
 ```text
 https://fin-accruals.vercel.app/manifest.xml
 https://fin-accruals.vercel.app/taskpane.html
 https://fin-accruals.vercel.app/commands.html
+https://fin-accruals.vercel.app/api/health
 ```
-
-Note: The root URL may show a 404 because the project does not currently include a homepage `index.html`. This is expected for the current add-in setup.
 
    What Is Not Completed Yet
 
-The following functionality is not fully implemented yet:
+The following features are planned for future phases:
 
-* Real QuickBooks Online OAuth connection
+* Real QuickBooks Online OAuth authentication
 * Real Xero integration
-* Backend API deployment
-* Database integration
-* Real account/vendor sync
-* Real journal entry posting
-* Authentication and authorization
-* Persistent audit logs
-* Production accounting workflow logic
-
-   Known Development Note
-
-The frontend currently points API calls to:
-
-```js
-const API_BASE = "http://localhost:3001";
-```
-
-This means backend-related buttons will only work if a backend server is running locally. For production, this needs to be changed to a deployed backend API URL.
+* Database integration (Supabase)
+* Persistent journal entry storage
+* Persistent submission history
+* Real account synchronization from QuickBooks
+* Real vendor synchronization from QuickBooks
+* Journal entry posting to QuickBooks
+* Authentication and user management
+* Audit logging
+* Production accounting workflow automation
 
    Next Steps
 
-* Build and deploy the backend API.
-* Replace the local API URL with the production backend URL.
-* Implement QuickBooks OAuth.
-* Add real accounts and vendors sync.
-* Add journal entry posting.
-* Add database storage for logs and submission history.
-* Test the add-in inside Excel using the production manifest.
+1. Integrate Supabase database.
+2. Store submitted journal entries in the database.
+3. Replace mock history with database-driven history.
+4. Implement QuickBooks OAuth authentication.
+5. Pull real accounts and vendors from QuickBooks.
+6. Post journal entries to QuickBooks.
+7. Add Xero integration.
+8. Implement user authentication and audit logging.
 
    Summary
 
-This repository currently provides the deployed frontend foundation for the FinAccruals / LedgerFlow Excel Add-in. The next phase is backend development and real accounting platform integration.
+The project now includes a functioning Excel Add-in, deployed backend APIs, Excel workbook integration, master data synchronization, journal entry validation, demo submission workflows, and Vercel deployment. The next phase focuses on database persistence and real accounting platform integrations.
+  FinAccruals / LedgerFlow Excel Add-in
+
+FinAccruals (LedgerFlow) is a Microsoft Excel Add-in built with Office.js to streamline accounting workflows directly within Excel. The current implementation provides a working Excel add-in with frontend functionality, workbook interaction, deployed API endpoints, and Excel-to-backend integration.
+
+   Current Status
+
+The project has completed the initial frontend and API integration phase. Users can pull master data into Excel, create journal entry templates, validate journal entries, submit demo journal entries, and retrieve submission history using deployed Vercel API endpoints.
+
+   What Has Been Completed
+
+    Excel Add-in Foundation
+
+* Created Office.js Excel Add-in project structure.
+* Built the LedgerFlow task pane interface.
+* Added Excel ribbon integration through `manifest.xml`.
+* Configured add-in branding and icons.
+* Configured Webpack build pipeline.
+* Connected GitHub repository to Vercel deployment.
+* Updated production manifest URLs.
+
+    Excel Workbook Integration
+
+* Created automated `Accounts` worksheet generation.
+* Created automated `Vendors` worksheet generation.
+* Created automated `Classes` worksheet generation.
+* Created `JE_Template` worksheet generation.
+* Added workbook data writing using Office.js APIs.
+
+    Journal Entry Workflow
+
+* Added journal entry template creation.
+* Implemented debit and credit balance validation.
+* Added journal entry submission workflow.
+* Added submission history display.
+* Added validation status messaging.
+
+    Backend API Integration
+
+* Deployed backend API routes on Vercel.
+* Added API health endpoint.
+* Added Accounts API endpoint.
+* Added Vendors API endpoint.
+* Added Classes API endpoint.
+* Added Submission History API endpoint.
+* Connected Excel Add-in frontend to deployed API endpoints.
+
+    Master Data Functionality
+
+* Pull Accounts from API into Excel.
+* Pull Vendors from API into Excel.
+* Pull Classes from API into Excel.
+* Populate dedicated worksheets automatically.
+
+   Current Working Features
+
+✅ Connect to QuickBooks (Demo Mode)
+
+✅ Pull Accounts
+
+✅ Pull Vendors
+
+✅ Pull Classes
+
+✅ Create Journal Entry Template
+
+✅ Validate Journal Entry Balance
+
+✅ Submit Demo Journal Entry
+
+✅ Load Submission History
+
+✅ Excel ↔ API Integration
+
+✅ Vercel Deployment
+
+   Tech Stack
+
+* JavaScript
+* HTML
+* CSS
+* Office.js
+* Webpack
+* Vercel Serverless Functions
+* GitHub
+
+   Project Structure
+
+```text
+src/
+├── taskpane/
+│   ├── taskpane.html
+│   ├── taskpane.css
+│   └── taskpane.js
+│
+├── commands/
+│   ├── commands.html
+│   └── commands.js
+
+api/
+├── health.js
+├── accounts.js
+├── vendors.js
+├── classes.js
+├── history.js
+
+assets/
+├── icon-16.png
+├── icon-32.png
+├── icon-64.png
+├── icon-80.png
+└── logo-filled.png
+
+manifest.xml
+webpack.config.js
+package.json
+```
+
+   Deployment
+
+Production URLs:
+
+```text
+https://fin-accruals.vercel.app/manifest.xml
+https://fin-accruals.vercel.app/taskpane.html
+https://fin-accruals.vercel.app/commands.html
+https://fin-accruals.vercel.app/api/health
+```
+
+   What Is Not Completed Yet
+
+The following features are planned for future phases:
+
+* Real QuickBooks Online OAuth authentication
+* Real Xero integration
+* Database integration (Supabase)
+* Persistent journal entry storage
+* Persistent submission history
+* Real account synchronization from QuickBooks
+* Real vendor synchronization from QuickBooks
+* Journal entry posting to QuickBooks
+* Authentication and user management
+* Audit logging
+* Production accounting workflow automation
+
+   Next Steps
+
+1. Integrate Supabase database.
+2. Store submitted journal entries in the database.
+3. Replace mock history with database-driven history.
+4. Implement QuickBooks OAuth authentication.
+5. Pull real accounts and vendors from QuickBooks.
+6. Post journal entries to QuickBooks.
+7. Add Xero integration.
+8. Implement user authentication and audit logging.
+
+   Summary
+
+The project now includes a functioning Excel Add-in, deployed backend APIs, Excel workbook integration, master data synchronization, journal entry validation, demo submission workflows, and Vercel deployment. The next phase focuses on database persistence and real accounting platform integrations.
