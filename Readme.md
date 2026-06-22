@@ -1,12 +1,12 @@
-  FinAccruals / LedgerFlow Excel Add-in
+# FinAccruals / LedgerFlow Excel Add-in
 
-   Overview
+## Overview
 
 FinAccruals (LedgerFlow) is a Microsoft Excel Add-in built with Office.js to streamline accounting workflows directly within Excel. The current implementation provides a working Excel add-in with frontend functionality, workbook interaction, deployed API endpoints, and Excel-to-backend integration.
 
 ---
 
-  Current Status
+# Current Status
 
 The project has completed the initial frontend and API integration phase.
 
@@ -24,9 +24,9 @@ Users can currently:
 
 ---
 
-  What Has Been Completed
+# What Has Been Completed
 
-   Excel Add-in Foundation
+## Excel Add-in Foundation
 
 * Created Office.js Excel Add-in project structure
 * Built the LedgerFlow task pane interface
@@ -36,7 +36,7 @@ Users can currently:
 * Connected GitHub repository to Vercel deployment
 * Updated production manifest URLs
 
-   Excel Workbook Integration
+## Excel Workbook Integration
 
 * Created automated `Accounts` worksheet generation
 * Created automated `Vendors` worksheet generation
@@ -44,7 +44,7 @@ Users can currently:
 * Created `JE_Template` worksheet generation
 * Added workbook data writing using Office.js APIs
 
-   Journal Entry Workflow
+## Journal Entry Workflow
 
 * Added journal entry template creation
 * Implemented debit and credit balance validation
@@ -52,7 +52,7 @@ Users can currently:
 * Added submission history display
 * Added validation status messaging
 
-   Backend API Integration
+## Backend API Integration
 
 * Deployed backend API routes on Vercel
 * Added API health endpoint
@@ -62,7 +62,7 @@ Users can currently:
 * Added Submission History API endpoint
 * Connected Excel Add-in frontend to deployed API endpoints
 
-   Master Data Functionality
+## Master Data Functionality
 
 * Pull Accounts from API into Excel
 * Pull Vendors from API into Excel
@@ -71,7 +71,7 @@ Users can currently:
 
 ---
 
-  Current Working Features
+# Current Working Features
 
 ✅ Connect to QuickBooks (Demo Mode)
 
@@ -95,22 +95,22 @@ Users can currently:
 
 ---
 
-  Technology Stack
+# Technology Stack
 
-    Frontend
+### Frontend
 
 * JavaScript
 * HTML
 * CSS
 * Office.js
 
-    Build & Deployment
+### Build & Deployment
 
 * Webpack
 * Vercel Serverless Functions
 * GitHub
 
-    Planned
+### Planned
 
 * Supabase
 * QuickBooks Online API
@@ -118,7 +118,7 @@ Users can currently:
 
 ---
 
-  Project Structure
+# Project Structure
 
 ```text
 src/
@@ -152,9 +152,9 @@ package.json
 
 ---
 
-  Production Deployment
+# Production Deployment
 
-   Production URLs
+## Production URLs
 
 ```text
 https://fin-accruals.vercel.app/manifest.xml
@@ -163,7 +163,7 @@ https://fin-accruals.vercel.app/commands.html
 https://fin-accruals.vercel.app/api/health
 ```
 
-   API Endpoints
+## API Endpoints
 
 ```text
 GET /api/health
@@ -175,11 +175,11 @@ GET /api/history
 
 ---
 
-  Running the Excel Add-in
+# Running the Excel Add-in
 
-   Option 1: Test Using the Deployed Manifest
+## Option 1: Test Using the Deployed Manifest
 
-    Excel Desktop
+### Excel Desktop
 
 1. Open Microsoft Excel Desktop.
 2. Open any workbook.
@@ -188,7 +188,7 @@ GET /api/history
 4. Upload the `manifest.xml` file.
 5. Open the FinAccruals add-in from the Home ribbon.
 
-    Excel Online
+### Excel Online
 
 1. Open Excel Online.
 2. Open any workbook.
@@ -198,37 +198,37 @@ GET /api/history
 
 ---
 
-  Testing the Application
+# Testing the Application
 
-   Pull Accounts
+## Pull Accounts
 
 1. Click **Pull Accounts**
 2. Verify an `Accounts` worksheet is created.
 3. Verify sample account data is loaded.
 
-   Pull Vendors
+## Pull Vendors
 
 1. Click **Pull Vendors**
 2. Verify a `Vendors` worksheet is created.
 3. Verify vendor records are loaded.
 
-   Pull Classes
+## Pull Classes
 
 1. Click **Pull Classes**
 2. Verify a `Classes` worksheet is created.
 3. Verify class records are loaded.
 
-   Create Journal Entry Template
+## Create Journal Entry Template
 
 1. Click **Create / Refresh JE Template**
 2. Verify a `JE_Template` worksheet is created.
 
-   Validate Journal Entry
+## Validate Journal Entry
 
 Enter sample data:
 
 ```text
-Line   | Account       | Vendor              | Class      | Description | Debit | Credit | Date
+Line # | Account       | Vendor              | Class      | Description | Debit | Credit | Date
 1      | Rent Expense  | Acme Property Mgmt  | Operations | Rent        | 500   | 0      | 6/22/2026
 2      | Checking      | Acme Property Mgmt  | Operations | Payment     | 0     | 500    | 6/22/2026
 ```
@@ -242,7 +242,7 @@ Entry is balanced.
 Debits = Credits = 500.00
 ```
 
-   Submit Journal Entry
+## Submit Journal Entry
 
 1. Click **Submit Journal Entry**
 2. Demo reference number is generated.
@@ -254,7 +254,7 @@ Submitted successfully.
 Ref: DEMO-JE-XXXXXXXX
 ```
 
-   Load History
+## Load History
 
 1. Click **Load History**
 2. Demo history records should appear.
@@ -270,15 +270,15 @@ $500
 
 ---
 
-  Local Development Setup
+# Local Development Setup
 
-   Prerequisites
+## Prerequisites
 
 * Node.js 18+
 * Git
 * Microsoft Excel Desktop
 
-   Installation
+## Installation
 
 ```bash
 git clone <repository-url>
@@ -286,7 +286,7 @@ cd FinAccruals
 npm install
 ```
 
-   Run Development Server
+## Run Development Server
 
 ```bash
 npm start
@@ -298,7 +298,7 @@ or
 npm run start
 ```
 
-   Build Production Version
+## Build Production Version
 
 ```bash
 npm run build
@@ -306,7 +306,7 @@ npm run build
 
 ---
 
-  What Is Not Completed Yet
+# What Is Not Completed Yet
 
 The following features are planned for future phases:
 
@@ -325,7 +325,7 @@ The following features are planned for future phases:
 
 ---
 
-  Next Steps
+# Next Steps
 
 1. Integrate Supabase database.
 2. Store submitted journal entries in the database.
@@ -338,7 +338,7 @@ The following features are planned for future phases:
 
 ---
 
-  Summary
+# Summary
 
 The project now includes a functioning Excel Add-in, deployed backend APIs, Excel workbook integration, master data synchronization, journal entry validation, demo submission workflows, and Vercel deployment.
 
