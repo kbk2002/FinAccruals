@@ -2,6 +2,8 @@
 
 const API_BASE = "https://fin-accruals.vercel.app/api";
 let isQboConnected = false;
+let validationPassed = false;
+const demoSubmissionHistory = [];
 
 Office.onReady(() => {
   initializeTabs();
@@ -51,6 +53,16 @@ function setAuthBadge(text, variant = "primary") {
   statusText.textContent = variant === "primary" ? "Demo company" : "Not selected";
 }
 
+function setConnectionDependentActions(enabled) {
+  ["btnPullAccounts", "btnPullVendors", "btnPullClasses"].forEach((id) => {
+    document.getElementById(id).disabled = !enabled;
+  });
+}
+
+function updateSubmitAvailability() {
+  document.getElementById("btnSubmitJE").disabled = !(isQboConnected && validationPassed);
+}
+
 /* 1. Demo Connect to QBO */
 
 async function handleConnectQBO() {
@@ -63,6 +75,8 @@ async function handleConnectQBO() {
     button.classList.add("is-connected");
     button.setAttribute("aria-pressed", "true");
     action.textContent = "Disconnect";
+    setConnectionDependentActions(true);
+    updateSubmitAvailability();
     setStatus("Demo QuickBooks connection active.", "success");
     setAuthBadge("Connected", "primary");
     return;
@@ -71,6 +85,9 @@ async function handleConnectQBO() {
   button.classList.remove("is-connected");
   button.setAttribute("aria-pressed", "false");
   action.textContent = "Connect";
+  validationPassed = false;
+  setConnectionDependentActions(false);
+  updateSubmitAvailability();
   setStatus("QuickBooks disconnected from this workbook.", "info");
   setAuthBadge("Not connected", "neutral");
 }
@@ -79,6 +96,11 @@ async function handleConnectQBO() {
 
 async function handlePullMasterData(kind) {
   try {
+    if (!isQboConnected) {
+      setStatus("Connect an accounting platform before syncing master data.", "error");
+      return;
+    }
+
     const labelMap = {
       accounts: "Accounts",
       vendors: "Vendors",
@@ -152,7 +174,14 @@ async function writeMasterDataToSheet(kind, data) {
 
     const all = [headers, ...rows];
 
-    sheet.getUsedRangeOrNullObject().clear();
+    const usedRange = sheet.getUsedRangeOrNullObject();
+    usedRange.load("address");
+
+    await context.sync();
+
+    if (!usedRange.isNullObject) {
+      usedRange.clear();
+    }
 
     const range = sheet.getRangeByIndexes(0, 0, all.length, headers.length);
     range.values = all;
@@ -208,13 +237,26 @@ async function handleCreateTemplate() {
       const dataRange = sheet.getRange("A2:H200");
       dataRange.clear();
 
-      sheet.getRange("A1:H200").name = "JE_TABLE";
+      const templateRange = sheet.getRange("A1:H200");
+      const existingName = context.workbook.names.getItemOrNullObject("JE_TABLE");
+      existingName.load("name");
+
+      await context.sync();
+
+      if (!existingName.isNullObject) {
+        existingName.delete();
+        await context.sync();
+      }
+
+      context.workbook.names.add("JE_TABLE", templateRange);
 
       sheet.activate();
 
       await context.sync();
     });
 
+    validationPassed = false;
+    updateSubmitAvailability();
     setStatus("JE template ready. Fill in lines and validate.", "success");
   } catch (err) {
     console.error(err);
@@ -229,39 +271,117 @@ async function handleValidateJE() {
     const resultEl = document.getElementById("validationResult");
     resultEl.textContent = "Validating entry...";
     resultEl.className = "validation-result";
+    validationPassed = false;
+    updateSubmitAvailability();
 
     const lines = await readJELinesFromSheet();
+    const validation = validateJELines(lines);
 
-    if (lines.length === 0) {
-      resultEl.textContent = "No lines found in JE_Template.";
+    if (!validation.valid) {
+      resultEl.textContent = validation.errors.join(" ");
       resultEl.classList.add("validation-result--error");
+      setStatus("Validation failed. Review the journal entry.", "error");
       return;
     }
 
-    let totalDebit = 0;
-    let totalCredit = 0;
-
-    for (const line of lines) {
-      totalDebit += Number(line.debit || 0);
-      totalCredit += Number(line.credit || 0);
-    }
-
-    if (Math.abs(totalDebit - totalCredit) > 0.01) {
-      resultEl.textContent = `Unbalanced entry. Debits: ${totalDebit.toFixed(
-        2
-      )}, Credits: ${totalCredit.toFixed(2)}.`;
-      resultEl.classList.add("validation-result--error");
-      setStatus("Validation failed: entry is not balanced.", "error");
-      return;
-    }
-
-    resultEl.textContent = `Entry is balanced. Debits = Credits = ${totalDebit.toFixed(2)}.`;
+    validationPassed = true;
+    updateSubmitAvailability();
+    resultEl.textContent = `All controls passed. ${lines.length} line(s), total debits and credits ${formatCurrency(
+      validation.totalDebit
+    )}.`;
     resultEl.classList.add("validation-result--ok");
     setStatus("Validation passed. Ready to submit.", "success");
   } catch (err) {
+    validationPassed = false;
+    updateSubmitAvailability();
     console.error(err);
+    const resultEl = document.getElementById("validationResult");
+    resultEl.textContent =
+      err.code === "ItemNotFound"
+        ? "Create the JE_Template sheet before running validation."
+        : `Validation failed: ${err.message}`;
+    resultEl.className = "validation-result validation-result--error";
     setStatus("Error validating JE.", "error");
   }
+}
+
+function parseAmount(value) {
+  if (value === "" || value === null || value === undefined) {
+    return 0;
+  }
+
+  const normalized = typeof value === "string" ? value.replace(/[$,\s]/g, "") : value;
+  const amount = Number(normalized);
+
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function validateJELines(lines) {
+  const errors = [];
+  let totalDebit = 0;
+  let totalCredit = 0;
+
+  if (lines.length === 0) {
+    return {
+      valid: false,
+      errors: ["No journal lines were found in JE_Template."],
+      totalDebit,
+      totalCredit,
+    };
+  }
+
+  lines.forEach((line, index) => {
+    const rowNumber = index + 2;
+    const debit = parseAmount(line.debit);
+    const credit = parseAmount(line.credit);
+
+    if (!line.account) {
+      errors.push(`Row ${rowNumber}: account is required.`);
+    }
+
+    if (!line.date) {
+      errors.push(`Row ${rowNumber}: date is required.`);
+    }
+
+    if (debit === null || credit === null) {
+      errors.push(`Row ${rowNumber}: debit and credit must be numeric.`);
+      return;
+    }
+
+    if (debit < 0 || credit < 0) {
+      errors.push(`Row ${rowNumber}: negative amounts are not allowed.`);
+    }
+
+    if ((debit > 0 && credit > 0) || (debit === 0 && credit === 0)) {
+      errors.push(`Row ${rowNumber}: enter an amount on exactly one side.`);
+    }
+
+    totalDebit += debit;
+    totalCredit += credit;
+  });
+
+  if (totalDebit <= 0 && totalCredit <= 0) {
+    errors.push("Journal total must be greater than zero.");
+  }
+
+  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    errors.push(
+      `Entry is unbalanced: debits ${formatCurrency(totalDebit)}, credits ${formatCurrency(
+        totalCredit
+      )}.`
+    );
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    totalDebit,
+    totalCredit,
+  };
+}
+
+function formatCurrency(value) {
+  return `$${value.toFixed(2)}`;
 }
 
 async function readJELinesFromSheet() {
@@ -283,7 +403,7 @@ async function readJELinesFromSheet() {
 
       const [lineNo, account, vendor, className, description, debit, credit, date] = row;
 
-      if (!account && !vendor && !className && !description && !debit && !credit) {
+      if (!account && !vendor && !className && !description && !debit && !credit && !date) {
         continue;
       }
 
@@ -307,12 +427,28 @@ async function readJELinesFromSheet() {
 
 async function handleSubmitJE() {
   try {
-    setStatus("Reading JE and submitting to demo backend...", "info");
+    if (!isQboConnected) {
+      setStatus("Connect QuickBooks before submitting a journal entry.", "error");
+      return;
+    }
+
+    if (!validationPassed) {
+      setStatus("Run validation successfully before submitting.", "error");
+      return;
+    }
+
+    setStatus("Rechecking JE before demo submission...", "info");
 
     const lines = await readJELinesFromSheet();
+    const validation = validateJELines(lines);
 
-    if (lines.length === 0) {
-      setStatus("No JE lines to submit.", "error");
+    if (!validation.valid) {
+      validationPassed = false;
+      updateSubmitAvailability();
+      const resultEl = document.getElementById("validationResult");
+      resultEl.textContent = validation.errors.join(" ");
+      resultEl.className = "validation-result validation-result--error";
+      setStatus("Journal changed after validation. Run validation again.", "error");
       return;
     }
 
@@ -321,12 +457,23 @@ async function handleSubmitJE() {
       reference: `DEMO-JE-${Date.now()}`,
       lines,
     };
+    const submission = {
+      id: payload.reference,
+      date: new Date().toISOString().slice(0, 10),
+      status: "Demo Submitted",
+      amount: validation.totalDebit,
+    };
+
+    demoSubmissionHistory.unshift(submission);
+    renderHistory(demoSubmissionHistory);
 
     setStatus("Journal entry submitted in demo mode.", "success");
 
     const resultEl = document.getElementById("validationResult");
     resultEl.textContent = `Submitted successfully. Ref: ${payload.reference}`;
     resultEl.className = "validation-result validation-result--ok";
+    validationPassed = false;
+    updateSubmitAvailability();
   } catch (err) {
     console.error(err);
     setStatus("Error submitting JE. See console.", "error");
@@ -350,33 +497,41 @@ async function handleLoadHistory() {
     }
 
     const payload = await res.json();
-    const items = payload.history || [];
-
-    const container = document.getElementById("historyList");
-    container.replaceChildren();
+    const items = [...demoSubmissionHistory, ...(payload.history || [])];
 
     if (!items.length) {
+      const container = document.getElementById("historyList");
+      container.replaceChildren();
       container.textContent = "No submissions found.";
       setStatus("History loaded empty.", "info");
       return;
     }
 
-    items.forEach((item) => {
-      const div = document.createElement("div");
-      div.className = "history-item history-item--success";
-      [item.id || "", item.date || "", item.status || "", `$${item.amount || 0}`].forEach(
-        (value) => {
-          const span = document.createElement("span");
-          span.textContent = value;
-          div.appendChild(span);
-        }
-      );
-      container.appendChild(div);
-    });
-
+    renderHistory(items);
     setStatus("History loaded.", "success");
   } catch (err) {
     console.error(err);
     setStatus("Error loading history.", "error");
   }
+}
+
+function renderHistory(items) {
+  const container = document.getElementById("historyList");
+  container.replaceChildren();
+
+  items.forEach((item) => {
+    const div = document.createElement("div");
+    div.className = "history-item history-item--success";
+    [
+      item.id || "",
+      item.date || "",
+      item.status || "",
+      formatCurrency(Number(item.amount) || 0),
+    ].forEach((value) => {
+      const span = document.createElement("span");
+      span.textContent = value;
+      div.appendChild(span);
+    });
+    container.appendChild(div);
+  });
 }

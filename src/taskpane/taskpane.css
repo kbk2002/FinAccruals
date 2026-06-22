@@ -531,6 +531,23 @@ button.connector {
   background: #fafbff;
 }
 
+.master-card:disabled {
+  border-color: var(--border);
+  background: #f7f8fb;
+  color: #8f99ad;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.master-card:disabled:hover {
+  border-color: var(--border);
+  background: #f7f8fb;
+}
+
+.master-card:disabled .sync-action {
+  color: var(--muted);
+}
+
 .master-icon,
 .template-icon {
   display: grid;
@@ -619,6 +636,14 @@ button.connector {
 
 .button:hover {
   transform: translateY(-1px);
+}
+
+.button:disabled {
+  background: #c9d0dd;
+  color: #788398;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .button--primary {
