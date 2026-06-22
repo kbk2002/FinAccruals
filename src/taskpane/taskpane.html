@@ -1,133 +1,320 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>FinAccruals – Excel Add-in</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FinAccruals LedgerFlow</title>
     <link rel="stylesheet" href="taskpane.css" />
     <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-    <script defer src="taskpane.js"></script>
   </head>
   <body>
     <div class="app-shell">
-      <header class="app-header">
-        <div class="app-title">
-          <span class="logo-dot"></span>
-          <span>FinAccruals</span>
+      <header class="product-header">
+        <div class="brand">
+          <svg class="brand-mark" viewBox="0 0 128 128" aria-label="FinAccruals">
+            <defs>
+              <linearGradient id="brand-bg" x1="18" y1="14" x2="110" y2="116">
+                <stop stop-color="#5b82ff" />
+                <stop offset="1" stop-color="#2d5be3" />
+              </linearGradient>
+              <linearGradient id="brand-flow" x1="37" y1="91" x2="96" y2="35">
+                <stop stop-color="#62e5d8" />
+                <stop offset="1" stop-color="#b7f36b" />
+              </linearGradient>
+            </defs>
+            <rect width="128" height="128" rx="30" fill="#fff" />
+            <rect x="19" y="19" width="90" height="90" rx="22" fill="url(#brand-bg)" />
+            <path
+              d="M39 40h50M39 57h50M39 74h50M39 91h27"
+              fill="none"
+              stroke="#fff"
+              stroke-width="8"
+              stroke-linecap="round"
+              opacity=".94"
+            />
+            <path
+              d="m59 91 16-17 10 10 17-24"
+              fill="none"
+              stroke="url(#brand-flow)"
+              stroke-width="9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M91 60h11v11"
+              fill="none"
+              stroke="#b7f36b"
+              stroke-width="9"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <div class="brand-copy">
+            <strong>FinAccruals</strong>
+            <span>LedgerFlow for Excel</span>
+          </div>
         </div>
-        <div class="app-subtitle">LedgerFlow for Excel</div>
+        <div class="environment-pill"><span></span> Sandbox</div>
       </header>
 
-      <main class="app-main">
-        <!-- Status bar -->
-        <div id="statusBar" class="status-bar status-bar--info">
-          Ready. Connect to QuickBooks to begin.
+      <div class="workspace-strip">
+        <div>
+          <span class="workspace-label">Workspace</span>
+          <strong>Current workbook</strong>
         </div>
+        <span class="workspace-role">Preparer</span>
+      </div>
 
-        <!-- Auth section -->
-        <section class="card">
-          <div class="card-header">
-            <h2>1. Connection</h2>
-            <span class="badge badge--primary" id="authStatusBadge">Not connected</span>
+      <nav class="workflow-nav" aria-label="LedgerFlow workflow">
+        <button class="workflow-tab active" type="button" data-panel="connect">
+          <span class="tab-number">1</span>
+          <span>Connect</span>
+        </button>
+        <span class="nav-line"></span>
+        <button class="workflow-tab" type="button" data-panel="data">
+          <span class="tab-number">2</span>
+          <span>Prepare</span>
+        </button>
+        <span class="nav-line"></span>
+        <button class="workflow-tab" type="button" data-panel="validate">
+          <span class="tab-number">3</span>
+          <span>Review</span>
+        </button>
+        <span class="nav-line"></span>
+        <button class="workflow-tab" type="button" data-panel="post">
+          <span class="tab-number">4</span>
+          <span>Post</span>
+        </button>
+      </nav>
+
+      <div id="statusBar" class="status-bar status-bar--info" role="status" aria-live="polite">
+        <span class="status-icon">i</span>
+        <span>Ready to configure this workbook.</span>
+      </div>
+
+      <main class="main-content">
+        <section id="panel-connect" class="panel active">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Accounting connection</p>
+              <h1>Connect your ledger</h1>
+            </div>
+            <span class="stage-chip">Step 1 of 4</span>
           </div>
-          <div class="card-body">
-            <p class="card-text">
-              Connect FinAccruals to your accounting platform. For MVP, QuickBooks Online is required.
-            </p>
-            <button id="btnConnectQBO" class="btn btn--primary btn--full">
-              Connect to QuickBooks Online
+          <p class="page-description">
+            Authorize a source system to sync reference data and submit approved entries.
+          </p>
+
+          <article class="surface">
+            <div class="surface-heading">
+              <div>
+                <h2>Available connections</h2>
+                <p>Select the accounting platform used by this entity.</p>
+              </div>
+            </div>
+
+            <button id="btnConnectQBO" class="connector connector--active" type="button">
+              <span class="connector-logo connector-logo--qbo">qb</span>
+              <span class="connector-copy">
+                <strong>QuickBooks Online</strong>
+                <small>Accounts, vendors, classes, journals</small>
+              </span>
+              <span class="connector-cta">Connect</span>
             </button>
-            <p class="hint">
-              Once connected, you’ll be able to pull accounts and vendors directly into this workbook.
-            </p>
-          </div>
+
+            <div class="connector connector--disabled" aria-disabled="true">
+              <span class="connector-logo connector-logo--xero">X</span>
+              <span class="connector-copy">
+                <strong>Xero</strong>
+                <small>Planned integration</small>
+              </span>
+              <span class="coming-badge">Coming soon</span>
+            </div>
+          </article>
+
+          <article class="surface session-surface">
+            <div class="surface-heading surface-heading--row">
+              <div>
+                <h2>Connection status</h2>
+                <p>Session details for this workbook.</p>
+              </div>
+              <span class="status-badge" id="authStatusBadge">Not connected</span>
+            </div>
+            <div class="session-grid">
+              <div>
+                <span>Company</span>
+                <strong id="authStatusText">Not selected</strong>
+              </div>
+              <div>
+                <span>Mode</span>
+                <strong>Demo sandbox</strong>
+              </div>
+              <div>
+                <span>Access</span>
+                <strong>Read / write</strong>
+              </div>
+              <div>
+                <span>Last sync</span>
+                <strong>Never</strong>
+              </div>
+            </div>
+          </article>
         </section>
 
-        <!-- Master data section -->
-        <section class="card">
-          <div class="card-header">
-            <h2>2. Master Data</h2>
-            <span class="badge badge--neutral">Accounts & Vendors</span>
+        <section id="panel-data" class="panel">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Workbook setup</p>
+              <h1>Prepare source data</h1>
+            </div>
+            <span class="stage-chip">Step 2 of 4</span>
           </div>
-          <div class="card-body">
-            <p class="card-text">
-              Pull the latest chart of accounts and vendor list into dedicated sheets in this workbook.
-            </p>
-            <div class="button-row">
-              <button id="btnPullAccounts" class="btn btn--secondary">
-                Pull Accounts
+          <p class="page-description">
+            Refresh controlled reference sheets before preparing the journal entry.
+          </p>
+
+          <article class="surface">
+            <div class="surface-heading">
+              <h2>Master data</h2>
+              <p>Each sync refreshes a dedicated worksheet in the current file.</p>
+            </div>
+            <div class="master-grid">
+              <button id="btnPullAccounts" class="master-card" type="button">
+                <span class="master-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 6h16M4 12h16M4 18h10" />
+                  </svg>
+                </span>
+                <span><strong>Accounts</strong><small>Chart of accounts</small></span>
+                <span class="sync-action">Sync</span>
               </button>
-              <button id="btnPullVendors" class="btn btn--secondary">
-                Pull Vendors
+              <button id="btnPullVendors" class="master-card" type="button">
+                <span class="master-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M16 20v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM17 11l2 2 3-4" />
+                  </svg>
+                </span>
+                <span><strong>Vendors</strong><small>Supplier directory</small></span>
+                <span class="sync-action">Sync</span>
+              </button>
+              <button id="btnPullClasses" class="master-card" type="button">
+                <span class="master-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m12 3-9 5 9 5 9-5-9-5ZM3 13l9 5 9-5" />
+                  </svg>
+                </span>
+                <span><strong>Classes</strong><small>Reporting dimensions</small></span>
+                <span class="sync-action">Sync</span>
               </button>
             </div>
-            <p class="hint">
-              Data will be written to <strong>Accounts</strong> and <strong>Vendors</strong> sheets. Do not rename these sheets.
-            </p>
-          </div>
-        </section>
+          </article>
 
-        <!-- JE template section -->
-        <section class="card">
-          <div class="card-header">
-            <h2>3. Journal Entry Template</h2>
-            <span class="badge badge--neutral">Excel-driven</span>
-          </div>
-          <div class="card-body">
-            <p class="card-text">
-              Create or refresh the journal entry template sheet with named ranges and dropdowns.
-            </p>
-            <button id="btnCreateTemplate" class="btn btn--outline btn--full">
-              Create / Refresh JE Template
-            </button>
-            <ul class="list">
-              <li>Account and vendor columns will use dropdowns from master data.</li>
-              <li>Debits and credits will be validated for balance.</li>
-            </ul>
-          </div>
-        </section>
-
-        <!-- Validation & submit -->
-        <section class="card">
-          <div class="card-header">
-            <h2>4. Validate & Submit</h2>
-            <span class="badge badge--warning">Review required</span>
-          </div>
-          <div class="card-body">
-            <p class="card-text">
-              Validate the current journal entry and submit it to QuickBooks Online.
-            </p>
-            <div class="button-row">
-              <button id="btnValidateJE" class="btn btn--ghost">
-                Validate Entry
-              </button>
-              <button id="btnSubmitJE" class="btn btn--primary">
-                Submit to QBO
-              </button>
+          <article class="surface template-surface">
+            <div class="template-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 3h10l4 4v14H5V3Zm10 0v5h4M8 13h8M8 17h5" />
+              </svg>
             </div>
-            <div id="validationResult" class="validation-result"></div>
+            <div class="template-copy">
+              <h2>Journal entry workspace</h2>
+              <p>Generate the standardized JE_Template sheet with the expected columns.</p>
+            </div>
+            <button id="btnCreateTemplate" class="button button--primary" type="button">
+              Create template
+            </button>
+          </article>
+        </section>
+
+        <section id="panel-validate" class="panel">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Control review</p>
+              <h1>Validate the entry</h1>
+            </div>
+            <span class="stage-chip">Step 3 of 4</span>
+          </div>
+          <p class="page-description">
+            Run control checks against the populated JE_Template before submission.
+          </p>
+
+          <article class="surface">
+            <div class="surface-heading surface-heading--row">
+              <div>
+                <h2>Pre-posting controls</h2>
+                <p>Current MVP control set.</p>
+              </div>
+              <span class="control-count">2 checks</span>
+            </div>
+            <div class="control-list">
+              <div class="control-row">
+                <span class="control-status">01</span>
+                <span><strong>Population check</strong><small>At least one journal line is present</small></span>
+              </div>
+              <div class="control-row">
+                <span class="control-status">02</span>
+                <span><strong>Balance check</strong><small>Total debits equal total credits within $0.01</small></span>
+              </div>
+            </div>
+            <button id="btnValidateJE" class="button button--primary" type="button">
+              Run control review
+            </button>
+          </article>
+
+          <div id="validationResult" class="validation-result" aria-live="polite">
+            <span class="result-marker">—</span>
+            <span>Validation has not been run.</span>
           </div>
         </section>
 
-        <!-- History -->
-        <section class="card">
-          <div class="card-header">
-            <h2>5. Submission History</h2>
-            <span class="badge badge--neutral">Read-only</span>
+        <section id="panel-post" class="panel">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Submission</p>
+              <h1>Post and monitor</h1>
+            </div>
+            <span class="stage-chip">Step 4 of 4</span>
           </div>
-          <div class="card-body">
-            <p class="card-text">
-              View recent submissions from this workbook for quick audit and troubleshooting.
+          <p class="page-description">
+            Create a demo submission reference and review recent processing activity.
+          </p>
+
+          <article class="surface submission-surface">
+            <div class="submission-topline">
+              <span class="sandbox-banner">Sandbox transaction</span>
+              <span class="submission-type">Journal entry</span>
+            </div>
+            <h2>Ready to submit?</h2>
+            <p>
+              The MVP records a demonstration reference only. No transaction is sent to a live ledger.
             </p>
-            <button id="btnLoadHistory" class="btn btn--ghost btn--full">
-              Load History
+            <button id="btnSubmitJE" class="button button--accent" type="button">
+              Submit demo journal
             </button>
-            <div id="historyList" class="history-list"></div>
-          </div>
+          </article>
+
+          <article class="surface">
+            <div class="surface-heading surface-heading--row">
+              <div>
+                <h2>Submission activity</h2>
+                <p>Most recent demo transactions.</p>
+              </div>
+              <button id="btnLoadHistory" class="refresh-button" type="button">Refresh</button>
+            </div>
+            <div id="historyList" class="history-list">
+              <div class="empty-state">
+                <span class="empty-state-icon">↻</span>
+                <span>Refresh to load submission history.</span>
+              </div>
+            </div>
+          </article>
         </section>
       </main>
 
-      <footer class="app-footer">
-        <span class="footer-text">FinAccruals · Internal MVP · v0.1.0</span>
+      <footer class="product-footer">
+        <span>FinAccruals</span>
+        <span class="footer-dot"></span>
+        <span>Secure Excel add-in</span>
+        <span class="footer-version">v0.1.0</span>
       </footer>
     </div>
   </body>

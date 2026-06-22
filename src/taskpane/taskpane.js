@@ -1,6 +1,9 @@
+/* global Office, Excel, document, fetch, console */
+
 const API_BASE = "https://fin-accruals.vercel.app/api";
 
 Office.onReady(() => {
+  initializeTabs();
   document.getElementById("btnConnectQBO").onclick = handleConnectQBO;
   document.getElementById("btnPullAccounts").onclick = () => handlePullMasterData("accounts");
   document.getElementById("btnPullVendors").onclick = () => handlePullMasterData("vendors");
@@ -16,24 +19,42 @@ Office.onReady(() => {
   document.getElementById("btnLoadHistory").onclick = handleLoadHistory;
 });
 
+function initializeTabs() {
+  const tabs = document.querySelectorAll(".workflow-tab");
+  const panels = document.querySelectorAll(".panel");
+
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((item) => item.classList.remove("active"));
+      panels.forEach((panel) => panel.classList.remove("active"));
+
+      tab.classList.add("active");
+      document.getElementById(`panel-${tab.dataset.panel}`).classList.add("active");
+    });
+  });
+}
+
 function setStatus(message, type = "info") {
   const bar = document.getElementById("statusBar");
-  bar.textContent = message;
+  const messageEl = bar.querySelector("span:last-child");
+  messageEl.textContent = message;
   bar.classList.remove("status-bar--info", "status-bar--success", "status-bar--error");
   bar.classList.add(`status-bar--${type}`);
 }
 
 function setAuthBadge(text, variant = "primary") {
   const badge = document.getElementById("authStatusBadge");
+  const statusText = document.getElementById("authStatusText");
   badge.textContent = text;
-  badge.className = `badge badge--${variant}`;
+  badge.className = `status-badge badge--${variant}`;
+  statusText.textContent = variant === "primary" ? "Demo company" : "—";
 }
 
 /* 1. Demo Connect to QBO */
 
 async function handleConnectQBO() {
   setStatus("Demo QuickBooks connection active.", "success");
-  setAuthBadge("Demo connected", "primary");
+  setAuthBadge("Connected", "primary");
 }
 
 /* 2. Pull master data */
@@ -150,7 +171,16 @@ async function handleCreateTemplate() {
         sheet = sheets.add(sheetName);
       }
 
-      const headers = ["Line #", "Account", "Vendor", "Class", "Description", "Debit", "Credit", "Date"];
+      const headers = [
+        "Line #",
+        "Account",
+        "Vendor",
+        "Class",
+        "Description",
+        "Debit",
+        "Credit",
+        "Date",
+      ];
 
       const headerRange = sheet.getRangeByIndexes(0, 0, 1, headers.length);
       headerRange.values = [headers];
@@ -305,7 +335,7 @@ async function handleLoadHistory() {
     const items = payload.history || [];
 
     const container = document.getElementById("historyList");
-    container.innerHTML = "";
+    container.replaceChildren();
 
     if (!items.length) {
       container.textContent = "No submissions found.";
@@ -316,12 +346,13 @@ async function handleLoadHistory() {
     items.forEach((item) => {
       const div = document.createElement("div");
       div.className = "history-item history-item--success";
-      div.innerHTML = `
-        <span>${item.id || ""}</span>
-        <span>${item.date || ""}</span>
-        <span>${item.status || ""}</span>
-        <span>$${item.amount || 0}</span>
-      `;
+      [item.id || "", item.date || "", item.status || "", `$${item.amount || 0}`].forEach(
+        (value) => {
+          const span = document.createElement("span");
+          span.textContent = value;
+          div.appendChild(span);
+        }
+      );
       container.appendChild(div);
     });
 
