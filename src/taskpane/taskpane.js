@@ -1,4 +1,4 @@
-/* global Office, Excel, document, fetch, console */
+/* global Office, Excel, document, fetch, console, window, setInterval, clearInterval */
 
 const API_BASE = "https://fin-accruals.vercel.app/api";
 let isQboConnected = false;
@@ -20,6 +20,7 @@ Office.onReady(() => {
   document.getElementById("btnValidateJE").onclick = handleValidateJE;
   document.getElementById("btnSubmitJE").onclick = handleSubmitJE;
   document.getElementById("btnLoadHistory").onclick = handleLoadHistory;
+  refreshQboStatus();
 });
 
 function initializeTabs() {
@@ -45,12 +46,13 @@ function setStatus(message, type = "info") {
   bar.classList.add(`status-bar--${type}`);
 }
 
-function setAuthBadge(text, variant = "primary") {
+function setAuthBadge(text, variant = "primary", companyName = "") {
   const badge = document.getElementById("authStatusBadge");
   const statusText = document.getElementById("authStatusText");
   badge.textContent = text;
   badge.className = `status-badge badge--${variant}`;
-  statusText.textContent = variant === "primary" ? "Demo company" : "Not selected";
+  statusText.textContent =
+    variant === "primary" ? companyName || "QuickBooks company" : "Not selected";
 }
 
 function setConnectionDependentActions(enabled) {
@@ -63,22 +65,20 @@ function updateSubmitAvailability() {
   document.getElementById("btnSubmitJE").disabled = !(isQboConnected && validationPassed);
 }
 
-/* 1. Demo Connect to QBO */
+/* 1. Connect to QBO */
 
-async function handleConnectQBO() {
+function applyConnectionState(connected, companyName = "") {
   const button = document.getElementById("btnConnectQBO");
   const action = button.querySelector(".connector-cta");
+  isQboConnected = connected;
 
-  isQboConnected = !isQboConnected;
-
-  if (isQboConnected) {
+  if (connected) {
     button.classList.add("is-connected");
     button.setAttribute("aria-pressed", "true");
     action.textContent = "Disconnect";
     setConnectionDependentActions(true);
     updateSubmitAvailability();
-    setStatus("Demo QuickBooks connection active.", "success");
-    setAuthBadge("Connected", "primary");
+    setAuthBadge("Connected", "primary", companyName);
     return;
   }
 
@@ -88,8 +88,126 @@ async function handleConnectQBO() {
   validationPassed = false;
   setConnectionDependentActions(false);
   updateSubmitAvailability();
-  setStatus("QuickBooks disconnected from this workbook.", "info");
   setAuthBadge("Not connected", "neutral");
+}
+
+async function apiFetch(path, options = {}) {
+  return fetch(`${API_BASE}${path}`, {
+    ...options,
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      ...(options.headers || {}),
+    },
+  });
+}
+
+async function refreshQboStatus(showMessage = false) {
+  try {
+    const response = await apiFetch("/qbo/status");
+    const payload = await response.json();
+    applyConnectionState(Boolean(payload.connected), payload.companyName || "");
+
+    if (showMessage) {
+      setStatus(
+        payload.connected
+          ? `Connected to ${payload.companyName || "QuickBooks Online"}.`
+          : "QuickBooks is not connected.",
+        payload.connected ? "success" : "info"
+      );
+    }
+
+    return Boolean(payload.connected);
+  } catch (error) {
+    console.error(error);
+    applyConnectionState(false);
+    if (showMessage) setStatus("Unable to check QuickBooks connection.", "error");
+    return false;
+  }
+}
+
+function openOAuthDialog(url) {
+  return new Promise((resolve, reject) => {
+    if (!Office.context?.ui?.displayDialogAsync) {
+      const popup = window.open(url, "finaccruals-qbo", "width=620,height=720");
+      if (!popup) {
+        reject(new Error("The authentication window was blocked."));
+        return;
+      }
+
+      const timer = setInterval(async () => {
+        if (await refreshQboStatus()) {
+          clearInterval(timer);
+          popup.close();
+          resolve();
+        } else if (popup.closed) {
+          clearInterval(timer);
+          reject(new Error("QuickBooks connection was not completed."));
+        }
+      }, 1500);
+      return;
+    }
+
+    Office.context.ui.displayDialogAsync(
+      url,
+      { height: 70, width: 45, displayInIframe: false },
+      (result) => {
+        if (result.status !== Office.AsyncResultStatus.Succeeded) {
+          reject(new Error(result.error?.message || "Unable to open QuickBooks authentication."));
+          return;
+        }
+
+        const dialog = result.value;
+        dialog.addEventHandler(Office.EventType.DialogMessageReceived, (event) => {
+          dialog.close();
+          try {
+            const message = JSON.parse(event.message);
+            message.success
+              ? resolve()
+              : reject(new Error(message.message || "Connection failed."));
+          } catch {
+            resolve();
+          }
+        });
+        dialog.addEventHandler(Office.EventType.DialogEventReceived, (event) => {
+          if (event.error) reject(new Error("QuickBooks authentication window was closed."));
+        });
+      }
+    );
+  });
+}
+
+async function handleConnectQBO() {
+  const button = document.getElementById("btnConnectQBO");
+  button.disabled = true;
+
+  try {
+    if (isQboConnected) {
+      setStatus("Disconnecting QuickBooks...", "info");
+      const response = await apiFetch("/qbo/disconnect", { method: "POST" });
+      if (!response.ok) throw new Error("Unable to disconnect QuickBooks.");
+      applyConnectionState(false);
+      setStatus("QuickBooks disconnected.", "info");
+      return;
+    }
+
+    setStatus("Opening secure QuickBooks authorization...", "info");
+    const response = await apiFetch("/qbo/auth-url");
+    const payload = await response.json();
+    if (!response.ok || !payload.url) {
+      throw new Error(payload.error || "Unable to begin QuickBooks authentication.");
+    }
+
+    await openOAuthDialog(payload.url);
+    const connected = await refreshQboStatus();
+    if (!connected) throw new Error("QuickBooks did not return a valid connection.");
+    setStatus("QuickBooks connected successfully.", "success");
+  } catch (error) {
+    console.error(error);
+    setStatus(error.message || "QuickBooks connection failed.", "error");
+  } finally {
+    button.disabled = false;
+  }
 }
 
 /* 2. Pull master data */
@@ -110,10 +228,12 @@ async function handlePullMasterData(kind) {
     const label = labelMap[kind];
     setStatus(`Pulling ${label.toLowerCase()} from deployed API...`, "info");
 
-    const res = await fetch(`${API_BASE}/${kind}`);
+    const res = await apiFetch(`/${kind}`);
 
     if (!res.ok) {
-      throw new Error(`Failed to pull ${label.toLowerCase()}`);
+      const errorPayload = await res.json().catch(() => ({}));
+      if (res.status === 401) applyConnectionState(false);
+      throw new Error(errorPayload.error || `Failed to pull ${label.toLowerCase()}`);
     }
 
     const payload = await res.json();
@@ -129,7 +249,7 @@ async function handlePullMasterData(kind) {
     setStatus(`${label} updated in workbook.`, "success");
   } catch (err) {
     console.error(err);
-    setStatus("Error pulling master data. See console.", "error");
+    setStatus(err.message || "Error pulling master data.", "error");
   }
 }
 
