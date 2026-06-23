@@ -6,8 +6,8 @@ export default function handler(req, res) {
         id: "JE-001",
         date: "2026-06-22",
         status: "Demo Submitted",
-        amount: 500
-      }
-    ]
+        amount: 500,
+      },
+    ],
   });
 }

@@ -1,4 +1,4 @@
-import { activeSession, qboQuery } from "./lib/qbo.js";
+import { activeSession, qboQuery } from "../server/qbo.js";
 
 const DATASETS = {
   items: {
