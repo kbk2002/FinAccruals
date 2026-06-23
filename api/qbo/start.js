@@ -1,5 +1,5 @@
-import { authorizationUrl } from "../lib/qbo.js";
-import { createOAuthState } from "../lib/session.js";
+import { authorizationUrl } from "../../server/qbo.js";
+import { createOAuthState } from "../../server/session.js";
 
 export default function handler(req, res) {
   if (req.method !== "GET") {

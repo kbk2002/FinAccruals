@@ -1,5 +1,5 @@
-import { revokeSession } from "../lib/qbo.js";
-import { clearSession, readSession } from "../lib/session.js";
+import { revokeSession } from "../../server/qbo.js";
+import { clearSession, readSession } from "../../server/session.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {

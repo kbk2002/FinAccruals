@@ -1,5 +1,5 @@
-import { activeSession, loadCompanyName } from "../lib/qbo.js";
-import { writeSession } from "../lib/session.js";
+import { activeSession, loadCompanyName } from "../../server/qbo.js";
+import { writeSession } from "../../server/session.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {

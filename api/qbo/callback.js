@@ -1,5 +1,5 @@
-import { exchangeCode, loadCompanyName } from "../lib/qbo.js";
-import { consumeOAuthState, writeSession } from "../lib/session.js";
+import { exchangeCode, loadCompanyName } from "../../server/qbo.js";
+import { consumeOAuthState, writeSession } from "../../server/session.js";
 
 function callbackPage(success, message) {
   const safeMessage = JSON.stringify({ source: "finaccruals-qbo", success, message });
