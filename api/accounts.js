@@ -1,4 +1,4 @@
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   res.status(200).json({
     success: true,
     accounts: [
@@ -20,4 +20,4 @@ export default function handler(req, res) {
       { code: "6400", name: "Depreciation Expense", type: "Expense" }
     ]
   });
-}
+};

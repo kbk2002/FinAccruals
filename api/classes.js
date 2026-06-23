@@ -1,4 +1,4 @@
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   res.status(200).json({
     success: true,
     classes: [
@@ -7,4 +7,4 @@ export default function handler(req, res) {
       { name: "Operations" }
     ]
   });
-}
+};
