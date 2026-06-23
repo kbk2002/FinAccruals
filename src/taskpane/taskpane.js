@@ -192,13 +192,7 @@ async function handleConnectQBO() {
     }
 
     setStatus("Opening secure QuickBooks authorization...", "info");
-    const response = await apiFetch("/qbo/auth-url");
-    const payload = await response.json();
-    if (!response.ok || !payload.url) {
-      throw new Error(payload.error || "Unable to begin QuickBooks authentication.");
-    }
-
-    await openOAuthDialog(payload.url);
+    await openOAuthDialog(`${API_BASE}/qbo/start`);
     const connected = await refreshQboStatus();
     if (!connected) throw new Error("QuickBooks did not return a valid connection.");
     setStatus("QuickBooks connected successfully.", "success");
