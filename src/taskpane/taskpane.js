@@ -10,12 +10,15 @@ Office.onReady(() => {
   document.getElementById("btnConnectQBO").onclick = handleConnectQBO;
   document.getElementById("btnPullAccounts").onclick = () => handlePullMasterData("accounts");
   document.getElementById("btnPullVendors").onclick = () => handlePullMasterData("vendors");
+  document.getElementById("btnPullCustomers").onclick = () => handlePullMasterData("customers");
 
   const btnPullClasses = document.getElementById("btnPullClasses");
   if (btnPullClasses) {
     btnPullClasses.onclick = () => handlePullMasterData("classes");
   }
 
+  document.getElementById("moreDataSelect").onchange = updateMoreDataButton;
+  document.getElementById("btnImportMoreData").onclick = handleImportMoreData;
   document.getElementById("btnCreateTemplate").onclick = handleCreateTemplate;
   document.getElementById("btnValidateJE").onclick = handleValidateJE;
   document.getElementById("btnSubmitJE").onclick = handleSubmitJE;
@@ -56,9 +59,20 @@ function setAuthBadge(text, variant = "primary", companyName = "") {
 }
 
 function setConnectionDependentActions(enabled) {
-  ["btnPullAccounts", "btnPullVendors", "btnPullClasses"].forEach((id) => {
+  ["btnPullAccounts", "btnPullVendors", "btnPullCustomers", "btnPullClasses"].forEach((id) => {
     document.getElementById(id).disabled = !enabled;
   });
+  document.getElementById("moreDataSelect").disabled = !enabled;
+  document.getElementById("moreDataResult").textContent = enabled
+    ? "Choose any supported table to create or refresh its worksheet."
+    : "Connect QuickBooks to browse additional tables.";
+  updateMoreDataButton();
+}
+
+function updateMoreDataButton() {
+  const select = document.getElementById("moreDataSelect");
+  document.getElementById("btnImportMoreData").disabled =
+    !isQboConnected || select.disabled || !select.value;
 }
 
 function updateSubmitAvailability() {
@@ -216,6 +230,7 @@ async function handlePullMasterData(kind) {
     const labelMap = {
       accounts: "Accounts",
       vendors: "Vendors",
+      customers: "Customers",
       classes: "Classes",
     };
 
@@ -236,6 +251,7 @@ async function handlePullMasterData(kind) {
 
     if (kind === "accounts") data = payload.accounts || [];
     if (kind === "vendors") data = payload.vendors || [];
+    if (kind === "customers") data = payload.customers || [];
     if (kind === "classes") data = payload.classes || [];
 
     await writeMasterDataToSheet(kind, data);
@@ -252,6 +268,7 @@ async function writeMasterDataToSheet(kind, data) {
     const sheetNameMap = {
       accounts: "Accounts",
       vendors: "Vendors",
+      customers: "Customers",
       classes: "Classes",
     };
 
@@ -279,6 +296,18 @@ async function writeMasterDataToSheet(kind, data) {
     if (kind === "vendors") {
       headers = ["Name", "Email"];
       rows = data.map((item) => [item.name || "", item.email || ""]);
+    }
+
+    if (kind === "customers") {
+      headers = ["QuickBooks ID", "Name", "Company", "Email", "Phone", "Balance"];
+      rows = data.map((item) => [
+        item.id || "",
+        item.name || "",
+        item.company || "",
+        item.email || "",
+        item.phone || "",
+        Number(item.balance) || 0,
+      ]);
     }
 
     if (kind === "classes") {
@@ -309,6 +338,72 @@ async function writeMasterDataToSheet(kind, data) {
 
     sheet.activate();
 
+    await context.sync();
+  });
+}
+
+async function handleImportMoreData() {
+  const select = document.getElementById("moreDataSelect");
+  const button = document.getElementById("btnImportMoreData");
+  const result = document.getElementById("moreDataResult");
+  const dataset = select.value;
+
+  if (!isQboConnected || !dataset) return;
+
+  button.disabled = true;
+  select.disabled = true;
+  result.textContent = `Importing ${select.options[select.selectedIndex].text}...`;
+  setStatus("Importing additional QuickBooks data...", "info");
+
+  try {
+    const response = await apiFetch(`/more-data?dataset=${encodeURIComponent(dataset)}`);
+    const payload = await response.json();
+
+    if (!response.ok) {
+      if (response.status === 401) applyConnectionState(false);
+      throw new Error(payload.error || "Unable to import the selected QuickBooks table.");
+    }
+
+    await writeTableToSheet(payload.sheetName, payload.headers, payload.rows);
+    result.textContent = `${payload.label}: ${payload.count} record(s) imported to ${payload.sheetName}.`;
+    setStatus(`${payload.label} updated in workbook.`, "success");
+  } catch (error) {
+    console.error(error);
+    result.textContent = error.message || "Import failed.";
+    setStatus(error.message || "Additional data import failed.", "error");
+  } finally {
+    select.disabled = !isQboConnected;
+    updateMoreDataButton();
+  }
+}
+
+async function writeTableToSheet(sheetName, headers, rows) {
+  return Excel.run(async (context) => {
+    const sheets = context.workbook.worksheets;
+    sheets.load("items/name");
+    await context.sync();
+
+    let sheet = sheets.items.find((item) => item.name === sheetName);
+    if (!sheet) sheet = sheets.add(sheetName);
+
+    const usedRange = sheet.getUsedRangeOrNullObject();
+    usedRange.load("address");
+    await context.sync();
+    if (!usedRange.isNullObject) usedRange.clear();
+
+    const values = [headers, ...(rows || [])];
+    const range = sheet.getRangeByIndexes(0, 0, values.length, headers.length);
+    range.values = values;
+    range.format.font.name = "Aptos";
+    range.format.autofitColumns();
+    range.format.autofitRows();
+
+    const headerRange = sheet.getRangeByIndexes(0, 0, 1, headers.length);
+    headerRange.format.font.bold = true;
+    headerRange.format.fill.color = "#e5e7eb";
+    headerRange.format.autofitColumns();
+
+    sheet.activate();
     await context.sync();
   });
 }

@@ -202,6 +202,15 @@
                 <span><strong>Vendors</strong><small>Supplier directory</small></span>
                 <span class="sync-action">Sync</span>
               </button>
+              <button id="btnPullCustomers" class="master-card" type="button" disabled>
+                <span class="master-icon">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6" />
+                  </svg>
+                </span>
+                <span><strong>Customers</strong><small>Customer directory</small></span>
+                <span class="sync-action">Sync</span>
+              </button>
               <button id="btnPullClasses" class="master-card" type="button" disabled>
                 <span class="master-icon">
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -212,6 +221,41 @@
                 <span class="sync-action">Sync</span>
               </button>
             </div>
+          </article>
+
+          <article class="surface more-data-surface">
+            <div class="surface-heading">
+              <h2>More QuickBooks data</h2>
+              <p>Select another QuickBooks table and import it into a dedicated worksheet.</p>
+            </div>
+            <div class="more-data-controls">
+              <select id="moreDataSelect" class="data-select" disabled>
+                <option value="">Select a table...</option>
+                <optgroup label="Reference data">
+                  <option value="items">Products &amp; Services</option>
+                  <option value="employees">Employees</option>
+                  <option value="locations">Locations</option>
+                  <option value="terms">Payment Terms</option>
+                  <option value="paymentMethods">Payment Methods</option>
+                  <option value="taxCodes">Tax Codes</option>
+                </optgroup>
+                <optgroup label="Transactions">
+                  <option value="invoices">Invoices</option>
+                  <option value="bills">Bills</option>
+                  <option value="payments">Customer Payments</option>
+                  <option value="expenses">Expenses</option>
+                  <option value="deposits">Deposits</option>
+                  <option value="purchaseOrders">Purchase Orders</option>
+                  <option value="journalEntries">Journal Entries</option>
+                </optgroup>
+              </select>
+              <button id="btnImportMoreData" class="button button--primary" type="button" disabled>
+                Import table
+              </button>
+            </div>
+            <p id="moreDataResult" class="more-data-result" aria-live="polite">
+              Connect QuickBooks to browse additional tables.
+            </p>
           </article>
 
           <article class="surface template-surface">
