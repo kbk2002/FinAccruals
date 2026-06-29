@@ -75,6 +75,7 @@ const DATASETS = {
     label: "Invoices",
     sheetName: "Invoices",
     entity: "Invoice",
+    transaction: true,
     map: (item) => [
       item.Id,
       item.DocNumber || "",
@@ -90,6 +91,7 @@ const DATASETS = {
     label: "Bills",
     sheetName: "Bills",
     entity: "Bill",
+    transaction: true,
     map: (item) => [
       item.Id,
       item.DocNumber || "",
@@ -105,6 +107,7 @@ const DATASETS = {
     label: "Customer Payments",
     sheetName: "Customer_Payments",
     entity: "Payment",
+    transaction: true,
     map: (item) => [
       item.Id,
       item.TxnDate || "",
@@ -119,6 +122,7 @@ const DATASETS = {
     label: "Expenses",
     sheetName: "Expenses",
     entity: "Purchase",
+    transaction: true,
     map: (item) => [
       item.Id,
       item.TxnDate || "",
@@ -134,6 +138,7 @@ const DATASETS = {
     label: "Deposits",
     sheetName: "Deposits",
     entity: "Deposit",
+    transaction: true,
     map: (item) => [
       item.Id,
       item.TxnDate || "",
@@ -147,6 +152,7 @@ const DATASETS = {
     label: "Purchase Orders",
     sheetName: "Purchase_Orders",
     entity: "PurchaseOrder",
+    transaction: true,
     map: (item) => [
       item.Id,
       item.DocNumber || "",
@@ -161,6 +167,7 @@ const DATASETS = {
     label: "Journal Entries",
     sheetName: "Journal_Entries",
     entity: "JournalEntry",
+    transaction: true,
     map: (item) => [
       item.Id,
       item.DocNumber || "",
@@ -172,6 +179,73 @@ const DATASETS = {
     headers: ["QuickBooks ID", "Document #", "Date", "Total", "Memo", "Adjustment"],
   },
 };
+
+function isoDate(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function addDays(date, days) {
+  const copy = new Date(date);
+  copy.setUTCDate(copy.getUTCDate() + days);
+  return copy;
+}
+
+function dateRangePreset(key) {
+  const today = new Date();
+  const end = isoDate(today);
+
+  if (key === "last30") {
+    return {
+      start: isoDate(addDays(today, -30)),
+      end,
+      label: "Last 30 days",
+    };
+  }
+
+  if (key === "ytd") {
+    return {
+      start: `${today.getUTCFullYear()}-01-01`,
+      end,
+      label: "Year to date",
+    };
+  }
+
+  if (key === "all") {
+    return {
+      start: "",
+      end: "",
+      label: "All sandbox data",
+    };
+  }
+
+  return {
+    start: isoDate(addDays(today, -90)),
+    end,
+    label: "Last 90 days",
+  };
+}
+
+function buildQuery(dataset, dateRangeKey) {
+  if (!dataset.transaction) {
+    return {
+      query: `select * from ${dataset.entity} maxresults 1000`,
+      dateRangeLabel: "",
+    };
+  }
+
+  const range = dateRangePreset(dateRangeKey);
+  if (!range.start || !range.end) {
+    return {
+      query: `select * from ${dataset.entity} maxresults 1000`,
+      dateRangeLabel: range.label,
+    };
+  }
+
+  return {
+    query: `select * from ${dataset.entity} where TxnDate >= '${range.start}' and TxnDate <= '${range.end}' maxresults 1000`,
+    dateRangeLabel: range.label,
+  };
+}
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -186,7 +260,8 @@ export default async function handler(req, res) {
     const session = await activeSession(req, res);
     if (!session) return res.status(401).json({ error: "QuickBooks is not connected." });
 
-    const result = await qboQuery(session, `select * from ${dataset.entity} maxresults 1000`);
+    const { query, dateRangeLabel } = buildQuery(dataset, String(req.query.dateRange || "last90"));
+    const result = await qboQuery(session, query);
     const rows = (result[dataset.entity] || []).map(dataset.map);
     return res.status(200).json({
       success: true,
@@ -195,6 +270,7 @@ export default async function handler(req, res) {
       headers: dataset.headers,
       rows,
       count: rows.length,
+      dateRangeLabel,
     });
   } catch (error) {
     return res.status(502).json({ error: error.message });
