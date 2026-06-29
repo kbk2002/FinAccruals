@@ -258,20 +258,28 @@
             </p>
           </article>
 
-          <article class="surface template-surface">
-            <div class="template-icon">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M5 3h10l4 4v14H5V3Zm10 0v5h4M8 13h8M8 17h5" />
-              </svg>
-            </div>
-            <div class="template-copy">
-              <h2>Journal entry workspace</h2>
-              <p>Generate the standardized JE_Template sheet with the expected columns.</p>
-            </div>
-            <button id="btnCreateTemplate" class="button button--primary" type="button">
-              Create template
-            </button>
-          </article>
+<article class="surface">
+  <div class="surface-heading">
+    <h2>Journal entry workspace</h2>
+    <p>Create or refresh the worksheet used to prepare journal entries.</p>
+  </div>
+
+  <button id="btnCreateTemplate" class="master-card template-card" type="button">
+    <span class="master-icon">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 3h10l4 4v14H5V3Zm10 0v5h4M8 13h8M8 17h5"/>
+      </svg>
+    </span>
+
+    <span>
+      <strong>JE_Template</strong>
+      <small>Standard journal entry worksheet</small>
+    </span>
+
+    <span class="sync-action">Generate</span>
+  </button>
+</article>
+          
         </section>
 
         <section id="panel-validate" class="panel">
