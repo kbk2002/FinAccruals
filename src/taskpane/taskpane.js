@@ -682,7 +682,7 @@ async function readJELinesFromSheet() {
   });
 }
 
-/* 5. Submit JE demo */
+/* 5. Submit JE to QuickBooks sandbox */
 
 async function handleSubmitJE() {
   try {
@@ -696,7 +696,7 @@ async function handleSubmitJE() {
       return;
     }
 
-    setStatus("Rechecking JE before demo submission...", "info");
+    setStatus("Rechecking JE before sandbox posting...", "info");
 
     const lines = await readJELinesFromSheet();
     const validation = validateJELines(lines);
@@ -711,25 +711,39 @@ async function handleSubmitJE() {
       return;
     }
 
-    const payload = {
-      success: true,
-      reference: `DEMO-JE-${Date.now()}`,
-      lines,
-    };
+    setStatus("Posting journal entry to QuickBooks sandbox...", "info");
+
+    const response = await apiFetch("/journal-entries", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ lines }),
+    });
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        applyConnectionState(false);
+        throw new Error("Connect QuickBooks first, then try posting again.");
+      }
+      throw new Error(payload.error || "QuickBooks sandbox posting failed.");
+    }
+
     const submission = {
-      id: payload.reference,
-      date: new Date().toISOString().slice(0, 10),
-      status: "Demo Submitted",
-      amount: validation.totalDebit,
+      id: payload.id ? `QBO-JE-${payload.id}` : `QBO-JE-${Date.now()}`,
+      date: payload.date || new Date().toISOString().slice(0, 10),
+      status: "Posted to Sandbox",
+      amount: Number(payload.amount) || validation.totalDebit,
     };
 
     demoSubmissionHistory.unshift(submission);
     renderHistory(demoSubmissionHistory);
 
-    setStatus("Journal entry submitted in demo mode.", "success");
+    setStatus("Journal entry posted to QuickBooks sandbox.", "success");
 
     const resultEl = document.getElementById("validationResult");
-    resultEl.textContent = `Submitted successfully. Ref: ${payload.reference}`;
+    resultEl.textContent = `Posted successfully. QuickBooks Journal Entry ID: ${payload.id || "created"}`;
     resultEl.className = "validation-result validation-result--ok";
     validationPassed = false;
     updateSubmitAvailability();
