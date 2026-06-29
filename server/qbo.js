@@ -133,6 +133,29 @@ export async function qboQuery(session, query) {
   return payload.QueryResponse || {};
 }
 
+export async function qboCreate(session, entity, payload) {
+  const url = new URL(`${apiBase(session.realmId)}/${entity.toLowerCase()}`);
+  url.searchParams.set("minorversion", "75");
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${session.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const body = await response.json().catch(() => ({}));
+
+  if (!response.ok || body.Fault) {
+    const detail = body.Fault?.Error?.[0]?.Detail || body.Fault?.Error?.[0]?.Message;
+    throw new Error(detail || "QuickBooks create request failed.");
+  }
+
+  return body[entity] || body;
+}
+
 export async function loadCompanyName(session) {
   const result = await qboQuery(session, "select * from CompanyInfo");
   return result.CompanyInfo?.[0]?.CompanyName || "";
