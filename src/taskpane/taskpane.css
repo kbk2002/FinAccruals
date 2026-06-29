@@ -662,6 +662,7 @@ button.connector {
 .template-card .sync-action {
   color: var(--success);
   font-weight: 700;
+  padding-left:28px;
 }
 
 .template-card:hover .sync-action {
