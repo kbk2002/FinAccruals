@@ -62,13 +62,6 @@ function setConnectionDependentActions(enabled) {
   ["btnPullAccounts", "btnPullVendors", "btnPullCustomers", "btnPullClasses"].forEach((id) => {
     document.getElementById(id).disabled = !enabled;
   });
-
-  ["masterDataSurface", "moreDataSurface"].forEach((id) => {
-    document.getElementById(id)?.classList.toggle("surface--locked", !enabled);
-  });
-
-  document.getElementById("dataLockNotice")?.classList.toggle("is-hidden", enabled);
-
   document.getElementById("moreDataSelect").disabled = !enabled;
   document.getElementById("moreDataResult").textContent = enabled
     ? "Choose any supported table to create or refresh its worksheet."
@@ -248,10 +241,7 @@ async function handlePullMasterData(kind) {
 
     if (!res.ok) {
       const errorPayload = await res.json().catch(() => ({}));
-      if (res.status === 401) {
-        applyConnectionState(false);
-        throw new Error("Connect QuickBooks first, then try syncing again.");
-      }
+      if (res.status === 401) applyConnectionState(false);
       throw new Error(errorPayload.error || `Failed to pull ${label.toLowerCase()}`);
     }
 
@@ -358,13 +348,7 @@ async function handleImportMoreData() {
   const result = document.getElementById("moreDataResult");
   const dataset = select.value;
 
-  if (!isQboConnected) {
-    setStatus("Connect QuickBooks before importing additional data.", "error");
-    result.textContent = "Connect QuickBooks to browse additional tables.";
-    return;
-  }
-
-  if (!dataset) return;
+  if (!isQboConnected || !dataset) return;
 
   button.disabled = true;
   select.disabled = true;
@@ -376,10 +360,7 @@ async function handleImportMoreData() {
     const payload = await response.json();
 
     if (!response.ok) {
-      if (response.status === 401) {
-        applyConnectionState(false);
-        throw new Error("Connect QuickBooks first, then try importing again.");
-      }
+      if (response.status === 401) applyConnectionState(false);
       throw new Error(payload.error || "Unable to import the selected QuickBooks table.");
     }
 
