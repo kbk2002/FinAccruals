@@ -4,6 +4,15 @@ const API_BASE = "https://fin-accruals.vercel.app/api";
 let isQboConnected = false;
 let validationPassed = false;
 const demoSubmissionHistory = [];
+const TRANSACTION_DATASETS = new Set([
+  "invoices",
+  "bills",
+  "payments",
+  "expenses",
+  "deposits",
+  "purchaseOrders",
+  "journalEntries",
+]);
 
 Office.onReady(() => {
   initializeTabs();
@@ -17,7 +26,8 @@ Office.onReady(() => {
     btnPullClasses.onclick = () => handlePullMasterData("classes");
   }
 
-  document.getElementById("moreDataSelect").onchange = updateMoreDataButton;
+  document.getElementById("moreDataSelect").onchange = updateMoreDataControls;
+  document.getElementById("moreDataDateRange").onchange = updateMoreDataButton;
   document.getElementById("btnImportMoreData").onclick = handleImportMoreData;
   document.getElementById("btnCreateTemplate").onclick = handleCreateTemplate;
   document.getElementById("btnValidateJE").onclick = handleValidateJE;
@@ -62,17 +72,34 @@ function setConnectionDependentActions(enabled) {
   ["btnPullAccounts", "btnPullVendors", "btnPullCustomers", "btnPullClasses"].forEach((id) => {
     document.getElementById(id).disabled = !enabled;
   });
+
+  ["masterDataSurface", "moreDataSurface"].forEach((id) => {
+    document.getElementById(id)?.classList.toggle("surface--locked", !enabled);
+  });
+
+  document.getElementById("dataLockNotice")?.classList.toggle("is-hidden", enabled);
+
   document.getElementById("moreDataSelect").disabled = !enabled;
+  document.getElementById("moreDataDateRange").disabled = !enabled;
   document.getElementById("moreDataResult").textContent = enabled
     ? "Choose any supported table to create or refresh its worksheet."
     : "Connect QuickBooks to browse additional tables.";
-  updateMoreDataButton();
+  updateMoreDataControls();
 }
 
 function updateMoreDataButton() {
   const select = document.getElementById("moreDataSelect");
   document.getElementById("btnImportMoreData").disabled =
     !isQboConnected || select.disabled || !select.value;
+}
+
+function updateMoreDataControls() {
+  const select = document.getElementById("moreDataSelect");
+  const range = document.getElementById("moreDataDateRange");
+  const isTransactionDataset = TRANSACTION_DATASETS.has(select.value);
+  range.classList.toggle("is-hidden", !isTransactionDataset);
+  range.disabled = !isQboConnected || !isTransactionDataset;
+  updateMoreDataButton();
 }
 
 function updateSubmitAvailability() {
@@ -241,7 +268,10 @@ async function handlePullMasterData(kind) {
 
     if (!res.ok) {
       const errorPayload = await res.json().catch(() => ({}));
-      if (res.status === 401) applyConnectionState(false);
+      if (res.status === 401) {
+        applyConnectionState(false);
+        throw new Error("Connect QuickBooks first, then try syncing again.");
+      }
       throw new Error(errorPayload.error || `Failed to pull ${label.toLowerCase()}`);
     }
 
@@ -344,28 +374,48 @@ async function writeMasterDataToSheet(kind, data) {
 
 async function handleImportMoreData() {
   const select = document.getElementById("moreDataSelect");
+  const range = document.getElementById("moreDataDateRange");
   const button = document.getElementById("btnImportMoreData");
   const result = document.getElementById("moreDataResult");
   const dataset = select.value;
+  const dateRange = range.value;
 
-  if (!isQboConnected || !dataset) return;
+  if (!isQboConnected) {
+    setStatus("Connect QuickBooks before importing additional data.", "error");
+    result.textContent = "Connect QuickBooks to browse additional tables.";
+    return;
+  }
+
+  if (!dataset) return;
 
   button.disabled = true;
   select.disabled = true;
-  result.textContent = `Importing ${select.options[select.selectedIndex].text}...`;
+  range.disabled = true;
+  const dateRangeSuffix = TRANSACTION_DATASETS.has(dataset)
+    ? ` (${range.options[range.selectedIndex].text})`
+    : "";
+  result.textContent = `Importing ${select.options[select.selectedIndex].text}${dateRangeSuffix}...`;
   setStatus("Importing additional QuickBooks data...", "info");
 
   try {
-    const response = await apiFetch(`/more-data?dataset=${encodeURIComponent(dataset)}`);
+    const query = new URLSearchParams({ dataset });
+    if (TRANSACTION_DATASETS.has(dataset)) query.set("dateRange", dateRange);
+
+    const response = await apiFetch(`/more-data?${query.toString()}`);
     const payload = await response.json();
 
     if (!response.ok) {
-      if (response.status === 401) applyConnectionState(false);
+      if (response.status === 401) {
+        applyConnectionState(false);
+        throw new Error("Connect QuickBooks first, then try importing again.");
+      }
       throw new Error(payload.error || "Unable to import the selected QuickBooks table.");
     }
 
     await writeTableToSheet(payload.sheetName, payload.headers, payload.rows);
-    result.textContent = `${payload.label}: ${payload.count} record(s) imported to ${payload.sheetName}.`;
+    result.textContent = `${payload.label}: ${payload.count} record(s) imported to ${
+      payload.sheetName
+    }${payload.dateRangeLabel ? ` for ${payload.dateRangeLabel}.` : "."}`;
     setStatus(`${payload.label} updated in workbook.`, "success");
   } catch (error) {
     console.error(error);
@@ -373,7 +423,7 @@ async function handleImportMoreData() {
     setStatus(error.message || "Additional data import failed.", "error");
   } finally {
     select.disabled = !isQboConnected;
-    updateMoreDataButton();
+    updateMoreDataControls();
   }
 }
 

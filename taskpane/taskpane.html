@@ -178,7 +178,14 @@
             Refresh controlled reference sheets before preparing the journal entry.
           </p>
 
-          <article class="surface">
+          <div id="dataLockNotice" class="lock-notice" role="note">
+            <span class="lock-notice-icon">🔒</span>
+            <span>
+              Connect QuickBooks first to unlock data imports for this workbook.
+            </span>
+          </div>
+
+          <article id="masterDataSurface" class="surface surface--locked">
             <div class="surface-heading">
               <h2>Master data</h2>
               <p>Each sync refreshes a dedicated worksheet in the current file.</p>
@@ -223,7 +230,7 @@
             </div>
           </article>
 
-          <article class="surface more-data-surface">
+          <article id="moreDataSurface" class="surface more-data-surface surface--locked">
             <div class="surface-heading">
               <h2>More QuickBooks data</h2>
               <p>Select another QuickBooks table and import it into a dedicated worksheet.</p>
@@ -249,6 +256,17 @@
                   <option value="journalEntries">Journal Entries</option>
                 </optgroup>
               </select>
+              <select
+                id="moreDataDateRange"
+                class="data-select data-select--range is-hidden"
+                aria-label="Transaction date range"
+                disabled
+              >
+                <option value="last30">Last 30 days</option>
+                <option value="last90" selected>Last 90 days</option>
+                <option value="ytd">Year to date</option>
+                <option value="all">All sandbox data</option>
+              </select>
               <button id="btnImportMoreData" class="button button--primary" type="button" disabled>
                 Import table
               </button>
@@ -258,28 +276,25 @@
             </p>
           </article>
 
-<article class="surface">
-  <div class="surface-heading">
-    <h2>Journal entry workspace</h2>
-    <p>Create or refresh the worksheet used to prepare journal entries.</p>
-  </div>
+          <article class="surface">
+            <div class="surface-heading">
+              <h2>Journal entry workspace</h2>
+              <p>Create or refresh the worksheet used to prepare journal entries.</p>
+            </div>
 
-  <button id="btnCreateTemplate" class="master-card template-card" type="button">
-    <span class="master-icon">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 3h10l4 4v14H5V3Zm10 0v5h4M8 13h8M8 17h5"/>
-      </svg>
-    </span>
-
-    <span>
-      <strong>JE_Template</strong>
-      <small>Standard journal entry worksheet</small>
-    </span>
-
-    <span class="sync-action">Generate</span>
-  </button>
-</article>
-          
+            <button id="btnCreateTemplate" class="master-card template-card" type="button">
+              <span class="master-icon">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M5 3h10l4 4v14H5V3Zm10 0v5h4M8 13h8M8 17h5" />
+                </svg>
+              </span>
+              <span>
+                <strong>JE_Template</strong>
+                <small>Standard journal entry worksheet</small>
+              </span>
+              <span class="sync-action">Generate</span>
+            </button>
+          </article>
         </section>
 
         <section id="panel-validate" class="panel">
