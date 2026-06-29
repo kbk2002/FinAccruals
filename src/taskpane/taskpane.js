@@ -299,7 +299,9 @@ async function handlePullMasterData(kind) {
   }
 }
 
-async function writeMasterDataToSheet(kind, data) {
+async function writeMasterDataToSheet(kind, data, options = {}) {
+  const { activate = true, hidden = false } = options;
+
   return Excel.run(async (context) => {
     const sheetNameMap = {
       accounts: "Accounts",
@@ -372,7 +374,11 @@ async function writeMasterDataToSheet(kind, data) {
     headerRange.format.font.bold = true;
     headerRange.format.fill.color = "#e5e7eb";
 
-    sheet.activate();
+    sheet.visibility = hidden ? Excel.SheetVisibility.hidden : Excel.SheetVisibility.visible;
+
+    if (activate) {
+      sheet.activate();
+    }
 
     await context.sync();
   });
@@ -482,7 +488,7 @@ async function handleCreateTemplate() {
 
     for (const kind of requiredMasterData) {
       const data = await fetchMasterData(kind);
-      await writeMasterDataToSheet(kind, data);
+      await writeMasterDataToSheet(kind, data, { activate: false, hidden: true });
       syncResults.push({ kind, count: data.length });
     }
 
