@@ -1,4 +1,4 @@
-import { readSession, writeSession } from "./session.js";
+import { clearSession, readSession, writeSession } from "./session.js";
 
 const AUTH_URL = "https://appcenter.intuit.com/connect/oauth2";
 const TOKEN_URL = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
@@ -84,13 +84,21 @@ export async function activeSession(req, res) {
   }
 
   if (!session.refreshToken || session.refreshTokenExpiresAt <= Date.now()) {
+    clearSession(res);
     return null;
   }
 
-  const tokens = await tokenRequest({
-    grant_type: "refresh_token",
-    refresh_token: session.refreshToken,
-  });
+  let tokens;
+  try {
+    tokens = await tokenRequest({
+      grant_type: "refresh_token",
+      refresh_token: session.refreshToken,
+    });
+  } catch {
+    clearSession(res);
+    return null;
+  }
+
   session = createSession(tokens, session.realmId, session);
   writeSession(res, session);
   return session;
