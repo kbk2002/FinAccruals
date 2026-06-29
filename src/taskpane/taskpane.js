@@ -727,7 +727,8 @@ async function handleSubmitJE() {
         applyConnectionState(false);
         throw new Error("Connect QuickBooks first, then try posting again.");
       }
-      throw new Error(payload.error || "QuickBooks sandbox posting failed.");
+      const detail = payload.error || payload.message || "QuickBooks sandbox posting failed.";
+      throw new Error(detail);
     }
 
     const submission = {
@@ -749,10 +750,15 @@ async function handleSubmitJE() {
     updateSubmitAvailability();
   } catch (err) {
     console.error(err);
-    setStatus("Error submitting JE. See console.", "error");
+    const message = err.message || "QuickBooks sandbox posting failed.";
+    const friendlyMessage = message.includes("was not found in QuickBooks")
+      ? `${message} Sync QuickBooks master data and use the exact Account, Vendor, or Class name from the workbook.`
+      : message;
+
+    setStatus(friendlyMessage, "error");
 
     const resultEl = document.getElementById("validationResult");
-    resultEl.textContent = `Submission failed: ${err.message}`;
+    resultEl.textContent = `Submission failed: ${friendlyMessage}`;
     resultEl.className = "validation-result validation-result--error";
   }
 }
