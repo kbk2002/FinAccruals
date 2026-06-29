@@ -461,6 +461,8 @@ async function writeTableToSheet(sheetName, headers, rows) {
 /* 3. Create / refresh JE template */
 
 async function handleCreateTemplate() {
+  const missingDropdownSources = [];
+
   try {
     setStatus("Creating / refreshing JE template...", "info");
 
@@ -496,6 +498,46 @@ async function handleCreateTemplate() {
       const dataRange = sheet.getRange("A2:H200");
       dataRange.clear();
 
+      const sheetNames = new Set(sheets.items.map((s) => s.name));
+      const dropdownColumns = sheet.getRange("B2:D200");
+      dropdownColumns.format.fill.color = "#eff6ff";
+
+      if (sheetNames.has("Accounts")) {
+        const accountRange = sheet.getRange("B2:B200");
+        accountRange.dataValidation.rule = {
+          list: {
+            inCellDropDown: true,
+            source: "='Accounts'!$B$2:$B$1000",
+          },
+        };
+      } else {
+        missingDropdownSources.push("Accounts");
+      }
+
+      if (sheetNames.has("Vendors")) {
+        const vendorRange = sheet.getRange("C2:C200");
+        vendorRange.dataValidation.rule = {
+          list: {
+            inCellDropDown: true,
+            source: "='Vendors'!$A$2:$A$1000",
+          },
+        };
+      } else {
+        missingDropdownSources.push("Vendors");
+      }
+
+      if (sheetNames.has("Classes")) {
+        const classRange = sheet.getRange("D2:D200");
+        classRange.dataValidation.rule = {
+          list: {
+            inCellDropDown: true,
+            source: "='Classes'!$A$2:$A$1000",
+          },
+        };
+      } else {
+        missingDropdownSources.push("Classes");
+      }
+
       const templateRange = sheet.getRange("A1:H200");
       const existingName = context.workbook.names.getItemOrNullObject("JE_TABLE");
       existingName.load("name");
@@ -516,7 +558,15 @@ async function handleCreateTemplate() {
 
     validationPassed = false;
     updateSubmitAvailability();
-    setStatus("JE template ready. Fill in lines and validate.", "success");
+
+    if (missingDropdownSources.length) {
+      setStatus(
+        `JE template ready. Sync ${missingDropdownSources.join(", ")} to enable all dropdowns.`,
+        "info"
+      );
+    } else {
+      setStatus("JE template ready with QuickBooks dropdowns. Fill in lines and validate.", "success");
+    }
   } catch (err) {
     console.error(err);
     setStatus("Error creating JE template.", "error");
