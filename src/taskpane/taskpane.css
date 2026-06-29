@@ -22,7 +22,7 @@
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 16px;
-  --shadow: 0 12px 28px rgba(18, 34, 73, 0.07);
+  --shadow: 0 4px 14px rgba(18, 34, 73, 0.06);
   --font: "Aptos", "Segoe UI", system-ui, sans-serif;
 }
 
@@ -42,7 +42,7 @@ body {
   background: var(--canvas);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 18px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
@@ -93,7 +93,7 @@ button:focus-visible {
 }
 
 .brand-copy strong {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 750;
   letter-spacing: -0.02em;
 }
@@ -101,7 +101,7 @@ button:focus-visible {
 .brand-copy span {
   margin-top: 1px;
   color: #9faccc;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -117,7 +117,7 @@ button:focus-visible {
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.06);
   color: #c5cee3;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 650;
 }
 
@@ -152,7 +152,7 @@ button:focus-visible {
 
 .workspace-strip strong {
   margin-top: 1px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
 }
 
@@ -162,7 +162,7 @@ button:focus-visible {
   border-radius: 5px;
   background: var(--cobalt-soft);
   color: var(--cobalt-dark);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -185,7 +185,7 @@ button:focus-visible {
   border: 0;
   background: transparent;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 650;
   cursor: pointer;
 }
@@ -198,7 +198,7 @@ button:focus-visible {
   border-radius: 50%;
   background: var(--surface);
   color: var(--ink-soft);
-  font-size: 8px;
+  font-size: 10px;
   place-items: center;
 }
 
@@ -232,7 +232,7 @@ button:focus-visible {
   border-radius: var(--radius-sm);
   background: #f7f9ff;
   color: var(--cobalt-dark);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -245,7 +245,7 @@ button:focus-visible {
   background: var(--cobalt);
   color: white;
   font-family: Georgia, serif;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   place-items: center;
 }
@@ -294,7 +294,7 @@ button:focus-visible {
 .eyebrow {
   margin: 0 0 3px;
   color: var(--cobalt);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -302,7 +302,7 @@ button:focus-visible {
 
 .page-heading h1 {
   margin: 0;
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 740;
   letter-spacing: -0.035em;
 }
@@ -314,7 +314,7 @@ button:focus-visible {
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.65);
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 650;
   white-space: nowrap;
 }
@@ -322,7 +322,7 @@ button:focus-visible {
 .page-description {
   margin: 6px 0 15px;
   color: var(--ink-soft);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.5;
 }
 
@@ -393,7 +393,7 @@ button:focus-visible {
 .surface h2,
 .surface-heading h2 {
   margin: 0;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 720;
   letter-spacing: -0.01em;
 }
@@ -402,7 +402,7 @@ button:focus-visible {
 .surface > p {
   margin: 3px 0 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 11px;
   line-height: 1.45;
 }
 
@@ -424,10 +424,19 @@ button.connector {
   cursor: pointer;
 }
 
+.connector--active {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+
 .connector--active:hover {
-  border-color: #9fb5f5;
+  transform: translateY(-2px);
+  border-color: #8fa8f2;
   background: #fafbff;
-  box-shadow: 0 6px 16px rgba(53, 109, 255, 0.08);
+  box-shadow: 0 8px 18px rgba(18, 34, 73, 0.1);
 }
 
 .connector--active.is-connected {
@@ -487,14 +496,14 @@ button.connector {
   border-radius: 6px;
   background: var(--cobalt-soft);
   color: var(--cobalt-dark);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 750;
 }
 
 .coming-badge {
   margin-left: auto;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 650;
 }
 
@@ -505,7 +514,7 @@ button.connector {
   border-radius: 99px;
   background: var(--canvas);
   color: var(--ink-soft);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -543,12 +552,12 @@ button.connector {
 
 .session-grid span {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .session-grid strong {
   margin-top: 3px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 680;
 }
 
@@ -568,19 +577,32 @@ button.connector {
   color: var(--ink);
   text-align: left;
   cursor: pointer;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease;
 }
 
-.master-card:hover {
+.master-card:hover:not(:disabled) {
+  transform: translateY(-2px);
   border-color: #adc0f5;
   background: #fafbff;
+  box-shadow: 0 6px 16px rgba(18, 34, 73, 0.08);
 }
 
 .master-card:disabled {
-  border-color: var(--border);
-  background: #f7f8fb;
-  color: #8f99ad;
+  border-color: #d9e0eb;
+  background: #f5f7fa;
+  color: #97a2b6;
   cursor: not-allowed;
-  opacity: 0.65;
+  opacity: 1;
+  box-shadow: none;
+}
+
+.master-card:disabled .master-icon {
+  background: #eceff5;
+  color: #b2bccd;
 }
 
 .master-card:disabled:hover {
@@ -589,7 +611,7 @@ button.connector {
 }
 
 .master-card:disabled .sync-action {
-  color: var(--muted);
+  color: #a9b3c4;
 }
 
 .master-icon,
@@ -622,18 +644,18 @@ button.connector {
 }
 
 .master-card strong {
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .master-card small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .sync-action {
   margin-left: auto;
   color: var(--cobalt);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 750;
 }
 
@@ -653,7 +675,7 @@ button.connector {
   background: var(--surface);
   color: var(--ink);
   font: inherit;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .data-select:focus {
@@ -674,7 +696,7 @@ button.connector {
 .more-data-result {
   margin: 8px 0 0;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
   line-height: 1.45;
 }
 
@@ -714,26 +736,35 @@ button.connector {
   font-weight: 700;
   cursor: pointer;
   transition:
-    transform 120ms ease,
-    box-shadow 120ms ease,
-    background 120ms ease;
+    background-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
 }
 
-.button:hover {
-  transform: translateY(-1px);
+.button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(18, 34, 73, 0.12);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 3px 8px rgba(18, 34, 73, 0.1);
 }
 
 .button:disabled {
-  background: #c9d0dd;
-  color: #788398;
+  background: #e5e9f1;
+  color: #98a3b8;
+  border: 1px solid #d6dde8;
   box-shadow: none;
   cursor: not-allowed;
   transform: none;
+  opacity: 1;
 }
 
 .button--primary {
   background: var(--cobalt);
-  box-shadow: 0 7px 15px rgba(53, 109, 255, 0.18);
+  box-shadow: 0 5px 12px rgba(53, 109, 255, 0.16);
 }
 
 .button--primary:hover {
@@ -742,7 +773,7 @@ button.connector {
 
 .button--accent {
   background: linear-gradient(90deg, #356dff, #285bdd);
-  box-shadow: 0 8px 18px rgba(53, 109, 255, 0.22);
+  box-shadow: 0 6px 14px rgba(53, 109, 255, 0.18);
 }
 
 .control-count {
@@ -750,7 +781,7 @@ button.connector {
   border-radius: 5px;
   background: var(--cobalt-soft);
   color: var(--cobalt);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -775,7 +806,7 @@ button.connector {
   border-radius: 7px;
   background: var(--cobalt-soft);
   color: var(--cobalt);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 750;
   place-items: center;
 }
@@ -786,12 +817,12 @@ button.connector {
 }
 
 .control-row strong {
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .control-row small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .validation-result {
@@ -803,7 +834,7 @@ button.connector {
   border-radius: var(--radius-sm);
   background: rgba(255, 255, 255, 0.55);
   color: var(--ink-soft);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .result-marker {
@@ -852,13 +883,13 @@ button.connector {
   border-radius: 5px;
   background: #fff4d9;
   color: var(--warning);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 750;
 }
 
 .submission-type {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 650;
 }
 
@@ -876,7 +907,7 @@ button.connector {
   border-radius: 6px;
   background: white;
   color: var(--cobalt);
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   cursor: pointer;
 }
@@ -896,7 +927,7 @@ button.connector {
   min-height: 57px;
   padding: 12px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .empty-state-icon {
@@ -916,7 +947,7 @@ button.connector {
   padding: 9px;
   border-bottom: 1px solid var(--border);
   color: var(--ink-soft);
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .history-item:last-child {
@@ -940,8 +971,15 @@ button.connector {
   gap: 7px;
   padding: 10px 14px 17px;
   color: #8b96ab;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 600;
+}
+
+.status-bar {
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease;
 }
 
 .footer-dot {
