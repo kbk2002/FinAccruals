@@ -247,6 +247,38 @@ async function handleConnectQBO() {
 
 /* 2. Pull master data */
 
+const MASTER_DATA_LABELS = {
+  accounts: "Accounts",
+  vendors: "Vendors",
+  customers: "Customers",
+  classes: "Classes",
+};
+
+function getMasterDataFromPayload(kind, payload) {
+  if (kind === "accounts") return payload.accounts || [];
+  if (kind === "vendors") return payload.vendors || [];
+  if (kind === "customers") return payload.customers || [];
+  if (kind === "classes") return payload.classes || [];
+  return [];
+}
+
+async function fetchMasterData(kind) {
+  const label = MASTER_DATA_LABELS[kind] || kind;
+  const res = await apiFetch(`/${kind}`);
+
+  if (!res.ok) {
+    const errorPayload = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      applyConnectionState(false);
+      throw new Error("Connect QuickBooks first, then try syncing again.");
+    }
+    throw new Error(errorPayload.error || `Failed to pull ${label.toLowerCase()}`);
+  }
+
+  const payload = await res.json();
+  return getMasterDataFromPayload(kind, payload);
+}
+
 async function handlePullMasterData(kind) {
   try {
     if (!isQboConnected) {
@@ -254,36 +286,10 @@ async function handlePullMasterData(kind) {
       return;
     }
 
-    const labelMap = {
-      accounts: "Accounts",
-      vendors: "Vendors",
-      customers: "Customers",
-      classes: "Classes",
-    };
-
-    const label = labelMap[kind];
+    const label = MASTER_DATA_LABELS[kind];
     setStatus(`Pulling ${label.toLowerCase()} from deployed API...`, "info");
 
-    const res = await apiFetch(`/${kind}`);
-
-    if (!res.ok) {
-      const errorPayload = await res.json().catch(() => ({}));
-      if (res.status === 401) {
-        applyConnectionState(false);
-        throw new Error("Connect QuickBooks first, then try syncing again.");
-      }
-      throw new Error(errorPayload.error || `Failed to pull ${label.toLowerCase()}`);
-    }
-
-    const payload = await res.json();
-
-    let data = [];
-
-    if (kind === "accounts") data = payload.accounts || [];
-    if (kind === "vendors") data = payload.vendors || [];
-    if (kind === "customers") data = payload.customers || [];
-    if (kind === "classes") data = payload.classes || [];
-
+    const data = await fetchMasterData(kind);
     await writeMasterDataToSheet(kind, data);
 
     setStatus(`${label} updated in workbook.`, "success");
@@ -464,7 +470,21 @@ async function handleCreateTemplate() {
   const missingDropdownSources = [];
 
   try {
-    setStatus("Creating / refreshing JE template...", "info");
+    if (!isQboConnected) {
+      setStatus("Connect QuickBooks before creating the journal template.", "error");
+      return;
+    }
+
+    setStatus("Preparing journal template and syncing QuickBooks dropdown data...", "info");
+
+    const requiredMasterData = ["accounts", "vendors", "classes"];
+    const syncResults = [];
+
+    for (const kind of requiredMasterData) {
+      const data = await fetchMasterData(kind);
+      await writeMasterDataToSheet(kind, data);
+      syncResults.push({ kind, count: data.length });
+    }
 
     await Excel.run(async (context) => {
       const sheets = context.workbook.worksheets;
@@ -565,11 +585,14 @@ async function handleCreateTemplate() {
         "info"
       );
     } else {
-      setStatus("JE template ready with QuickBooks dropdowns. Fill in lines and validate.", "success");
+      const syncSummary = syncResults
+        .map((result) => `${MASTER_DATA_LABELS[result.kind]}: ${result.count}`)
+        .join(", ");
+      setStatus(`JE template ready with QuickBooks dropdowns (${syncSummary}).`, "success");
     }
   } catch (err) {
     console.error(err);
-    setStatus("Error creating JE template.", "error");
+    setStatus(err.message || "Error creating JE template.", "error");
   }
 }
 
