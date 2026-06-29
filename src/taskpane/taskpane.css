@@ -639,7 +639,7 @@ button.connector {
 
 .more-data-controls {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   gap: 8px;
   align-items: center;
 }
@@ -665,6 +665,10 @@ button.connector {
   background: #f7f8fb;
   color: var(--muted);
   cursor: not-allowed;
+}
+
+.data-select--range.is-hidden {
+  display: none;
 }
 
 .more-data-result {
