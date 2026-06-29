@@ -62,6 +62,13 @@ function setConnectionDependentActions(enabled) {
   ["btnPullAccounts", "btnPullVendors", "btnPullCustomers", "btnPullClasses"].forEach((id) => {
     document.getElementById(id).disabled = !enabled;
   });
+
+  ["masterDataSurface", "moreDataSurface"].forEach((id) => {
+    document.getElementById(id)?.classList.toggle("surface--locked", !enabled);
+  });
+
+  document.getElementById("dataLockNotice")?.classList.toggle("is-hidden", enabled);
+
   document.getElementById("moreDataSelect").disabled = !enabled;
   document.getElementById("moreDataResult").textContent = enabled
     ? "Choose any supported table to create or refresh its worksheet."
