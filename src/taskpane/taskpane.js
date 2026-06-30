@@ -538,7 +538,7 @@ async function handleCreateTemplate() {
         "Description",
         "Debit *",
         "Credit *",
-        "Date * (auto)",
+        "Date",
       ];
 
       const titleRange = sheet.getRange("A1:H1");
@@ -613,6 +613,8 @@ async function handleCreateTemplate() {
       sheet.getRange("A6:E6").merge(false);
       sheet.getRange("A4:A5").format.font.bold = true;
       sheet.getRange("C4:C5").format.font.bold = true;
+      sheet.getRange("A4:A5").format.wrapText = false;
+      sheet.getRange("C4:C5").format.wrapText = false;
       sheet.getRange("B4").numberFormat = [["yyyy-mm-dd"]];
       sheet.getRange("B4").format.fill.color = "#fff7ed";
       sheet.getRange("D4:E4").format.fill.color = "#ffffff";
@@ -778,14 +780,14 @@ async function handleCreateTemplate() {
 
       sheet.getRange("A1:H211").format.font.name = "Aptos";
       sheet.getRange("A1:H211").format.autofitRows();
-      sheet.getRange("A:A").format.columnWidth = 52;
-      sheet.getRange("B:B").format.columnWidth = 190;
-      sheet.getRange("C:C").format.columnWidth = 145;
-      sheet.getRange("D:D").format.columnWidth = 140;
-      sheet.getRange("E:E").format.columnWidth = 260;
-      sheet.getRange("F:F").format.columnWidth = 92;
-      sheet.getRange("G:G").format.columnWidth = 92;
-      sheet.getRange("H:H").format.columnWidth = 105;
+      sheet.getRange("A:A").format.columnWidth = 74;
+      sheet.getRange("B:B").format.columnWidth = 185;
+      sheet.getRange("C:C").format.columnWidth = 132;
+      sheet.getRange("D:D").format.columnWidth = 125;
+      sheet.getRange("E:E").format.columnWidth = 225;
+      sheet.getRange("F:F").format.columnWidth = 82;
+      sheet.getRange("G:G").format.columnWidth = 82;
+      sheet.getRange("H:H").format.columnWidth = 72;
       sheet.getRange("A4:H6").format.rowHeight = 24;
       sheet.getRange("A:A").format.horizontalAlignment = Excel.HorizontalAlignment.center;
       sheet.getRange("B:D").format.horizontalAlignment = Excel.HorizontalAlignment.left;
