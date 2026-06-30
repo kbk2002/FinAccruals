@@ -4,6 +4,10 @@ const API_BASE = "https://fin-accruals.vercel.app/api";
 let isQboConnected = false;
 let validationPassed = false;
 const demoSubmissionHistory = [];
+const JE_TEMPLATE_HEADER_ROW_INDEX = 10;
+const JE_TEMPLATE_DATA_START_ROW_INDEX = 11;
+const JE_TEMPLATE_MAX_LINES = 200;
+const JE_TEMPLATE_COLUMN_COUNT = 8;
 const TRANSACTION_DATASETS = new Set([
   "invoices",
   "bills",
@@ -474,6 +478,9 @@ async function writeTableToSheet(sheetName, headers, rows) {
 
 async function handleCreateTemplate() {
   const missingDropdownSources = [];
+  const button = document.getElementById("btnCreateTemplate");
+  const actionLabel = button?.querySelector(".sync-action");
+  const originalActionText = actionLabel?.textContent || "Generate";
 
   try {
     if (!isQboConnected) {
@@ -481,16 +488,26 @@ async function handleCreateTemplate() {
       return;
     }
 
+    if (button) button.disabled = true;
+    if (actionLabel) actionLabel.textContent = "Preparing...";
+
     setStatus("Preparing journal template and syncing QuickBooks dropdown data...", "info");
 
     const requiredMasterData = ["accounts", "vendors", "classes"];
     const syncResults = [];
 
     for (const kind of requiredMasterData) {
+      const label = MASTER_DATA_LABELS[kind];
+      if (actionLabel) actionLabel.textContent = `Syncing ${label}...`;
+      setStatus(`Syncing ${label.toLowerCase()} for JE dropdowns...`, "info");
+
       const data = await fetchMasterData(kind);
       await writeMasterDataToSheet(kind, data, { activate: false, hidden: true });
       syncResults.push({ kind, count: data.length });
     }
+
+    if (actionLabel) actionLabel.textContent = "Creating...";
+    setStatus("Creating JE template and applying dropdowns...", "info");
 
     await Excel.run(async (context) => {
       const sheets = context.workbook.worksheets;
@@ -505,31 +522,129 @@ async function handleCreateTemplate() {
         sheet = sheets.add(sheetName);
       }
 
+      const usedRange = sheet.getUsedRangeOrNullObject();
+      usedRange.load("address");
+      await context.sync();
+      if (!usedRange.isNullObject) {
+        usedRange.clear();
+      }
+
       const headers = [
         "Line #",
-        "Account",
+        "Account *",
         "Vendor",
         "Class",
         "Description",
-        "Debit",
-        "Credit",
-        "Date",
+        "Debit *",
+        "Credit *",
+        "Date *",
       ];
 
-      const headerRange = sheet.getRangeByIndexes(0, 0, 1, headers.length);
+      const titleRange = sheet.getRange("A1:H1");
+      titleRange.values = [["FinAccruals Journal Entry Template", "", "", "", "", "", "", ""]];
+      titleRange.format.font.bold = true;
+      titleRange.format.font.size = 18;
+      titleRange.format.font.color = "#0f172a";
+
+      const subtitleRange = sheet.getRange("A2:H2");
+      subtitleRange.values = [
+        [
+          "Use dropdowns for QuickBooks fields, enter one debit or credit per row, validate, then post to the connected QuickBooks sandbox.",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+        ],
+      ];
+      subtitleRange.format.font.color = "#64748b";
+
+      const guideRange = sheet.getRange("A4:D8");
+      guideRange.values = [
+        ["How to complete this template", "", "", ""],
+        ["1", "Choose an Account from the dropdown. This is required for every line.", "", ""],
+        ["2", "Vendor and Class are optional. Use them only when the JE line needs that detail.", "", ""],
+        ["3", "Enter either Debit or Credit, not both. The totals must balance before posting.", "", ""],
+        ["4", "Use one journal date for all lines. Then run Validate before posting.", "", ""],
+      ];
+      guideRange.format.fill.color = "#f8fafc";
+      guideRange.format.font.color = "#334155";
+      sheet.getRange("A4:D4").format.font.bold = true;
+      sheet.getRange("A5:A8").format.font.bold = true;
+      sheet.getRange("A5:A8").format.font.color = "#2563eb";
+
+      const totalsRange = sheet.getRange("F4:H8");
+      totalsRange.values = [
+        ["Control totals", "", ""],
+        ["Total debit", "", ""],
+        ["Total credit", "", ""],
+        ["Difference", "", ""],
+        ["Status", "", ""],
+      ];
+      sheet.getRange("F4:H4").format.font.bold = true;
+      sheet.getRange("F4:H8").format.fill.color = "#f8fafc";
+      sheet.getRange("F5:F8").format.font.color = "#64748b";
+      sheet.getRange("G5").formulas = [[`=SUM(F${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:F${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
+      sheet.getRange("G6").formulas = [[`=SUM(G${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:G${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
+      sheet.getRange("G7").formulas = [["=G5-G6"]];
+      sheet.getRange("G8").formulas = [["=IF(ABS(G7)<0.01,\"Balanced\",\"Needs review\")"]];
+      sheet.getRange("G5:G7").numberFormat = [["$#,##0.00"], ["$#,##0.00"], ["$#,##0.00"]];
+      sheet.getRange("G8").format.font.bold = true;
+
+      const sectionRange = sheet.getRange("A10:H10");
+      sectionRange.values = [["Journal lines", "", "", "", "", "", "", ""]];
+      sectionRange.format.font.bold = true;
+      sectionRange.format.font.color = "#1d4ed8";
+
+      const headerRange = sheet.getRangeByIndexes(
+        JE_TEMPLATE_HEADER_ROW_INDEX,
+        0,
+        1,
+        headers.length
+      );
       headerRange.values = [headers];
       headerRange.format.font.bold = true;
-      headerRange.format.fill.color = "#e5e7eb";
+      headerRange.format.fill.color = "#dbeafe";
+      headerRange.format.font.color = "#0f172a";
 
-      const dataRange = sheet.getRange("A2:H200");
-      dataRange.clear();
+      const dataRange = sheet.getRangeByIndexes(
+        JE_TEMPLATE_DATA_START_ROW_INDEX,
+        0,
+        JE_TEMPLATE_MAX_LINES,
+        JE_TEMPLATE_COLUMN_COUNT
+      );
+      dataRange.format.font.name = "Aptos";
+      dataRange.format.fill.color = "#ffffff";
+
+      const lineNumbers = Array.from({ length: JE_TEMPLATE_MAX_LINES }, (_, index) => [index + 1]);
+      const lineNumberRange = sheet.getRangeByIndexes(
+        JE_TEMPLATE_DATA_START_ROW_INDEX,
+        0,
+        JE_TEMPLATE_MAX_LINES,
+        1
+      );
+      lineNumberRange.values = lineNumbers;
+      lineNumberRange.format.font.color = "#64748b";
+      lineNumberRange.format.fill.color = "#f8fafc";
 
       const sheetNames = new Set(sheets.items.map((s) => s.name));
-      const dropdownColumns = sheet.getRange("B2:D200");
+      const dropdownColumns = sheet.getRangeByIndexes(
+        JE_TEMPLATE_DATA_START_ROW_INDEX,
+        1,
+        JE_TEMPLATE_MAX_LINES,
+        3
+      );
       dropdownColumns.format.fill.color = "#eff6ff";
 
       if (sheetNames.has("Accounts")) {
-        const accountRange = sheet.getRange("B2:B200");
+        const accountRange = sheet.getRangeByIndexes(
+          JE_TEMPLATE_DATA_START_ROW_INDEX,
+          1,
+          JE_TEMPLATE_MAX_LINES,
+          1
+        );
         accountRange.dataValidation.rule = {
           list: {
             inCellDropDown: true,
@@ -541,7 +656,12 @@ async function handleCreateTemplate() {
       }
 
       if (sheetNames.has("Vendors")) {
-        const vendorRange = sheet.getRange("C2:C200");
+        const vendorRange = sheet.getRangeByIndexes(
+          JE_TEMPLATE_DATA_START_ROW_INDEX,
+          2,
+          JE_TEMPLATE_MAX_LINES,
+          1
+        );
         vendorRange.dataValidation.rule = {
           list: {
             inCellDropDown: true,
@@ -553,7 +673,12 @@ async function handleCreateTemplate() {
       }
 
       if (sheetNames.has("Classes")) {
-        const classRange = sheet.getRange("D2:D200");
+        const classRange = sheet.getRangeByIndexes(
+          JE_TEMPLATE_DATA_START_ROW_INDEX,
+          3,
+          JE_TEMPLATE_MAX_LINES,
+          1
+        );
         classRange.dataValidation.rule = {
           list: {
             inCellDropDown: true,
@@ -564,7 +689,36 @@ async function handleCreateTemplate() {
         missingDropdownSources.push("Classes");
       }
 
-      const templateRange = sheet.getRange("A1:H200");
+      const amountRange = sheet.getRangeByIndexes(
+        JE_TEMPLATE_DATA_START_ROW_INDEX,
+        5,
+        JE_TEMPLATE_MAX_LINES,
+        2
+      );
+      amountRange.numberFormat = Array.from({ length: JE_TEMPLATE_MAX_LINES }, () => [
+        "$#,##0.00",
+        "$#,##0.00",
+      ]);
+
+      const dateRange = sheet.getRangeByIndexes(
+        JE_TEMPLATE_DATA_START_ROW_INDEX,
+        7,
+        JE_TEMPLATE_MAX_LINES,
+        1
+      );
+      dateRange.numberFormat = Array.from({ length: JE_TEMPLATE_MAX_LINES }, () => ["yyyy-mm-dd"]);
+
+      const requiredInputRange = sheet.getRangeByIndexes(
+        JE_TEMPLATE_DATA_START_ROW_INDEX,
+        1,
+        JE_TEMPLATE_MAX_LINES,
+        1
+      );
+      requiredInputRange.format.fill.color = "#eff6ff";
+      amountRange.format.fill.color = "#fff7ed";
+      dateRange.format.fill.color = "#fff7ed";
+
+      const templateRange = sheet.getRangeByIndexes(0, 0, JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES, JE_TEMPLATE_COLUMN_COUNT);
       const existingName = context.workbook.names.getItemOrNullObject("JE_TABLE");
       existingName.load("name");
 
@@ -576,6 +730,16 @@ async function handleCreateTemplate() {
       }
 
       context.workbook.names.add("JE_TABLE", templateRange);
+
+      sheet.getRange("A1:H211").format.font.name = "Aptos";
+      sheet.getRange("A1:H211").format.autofitColumns();
+      sheet.getRange("A1:H211").format.autofitRows();
+      sheet.getRange("B:B").format.columnWidth = 170;
+      sheet.getRange("C:C").format.columnWidth = 130;
+      sheet.getRange("D:D").format.columnWidth = 130;
+      sheet.getRange("E:E").format.columnWidth = 220;
+      sheet.getRange("F:H").format.columnWidth = 95;
+      sheet.freezePanes.freezeRows(JE_TEMPLATE_HEADER_ROW_INDEX + 1);
 
       sheet.activate();
 
@@ -599,6 +763,9 @@ async function handleCreateTemplate() {
   } catch (err) {
     console.error(err);
     setStatus(err.message || "Error creating JE template.", "error");
+  } finally {
+    if (button) button.disabled = !isQboConnected;
+    if (actionLabel) actionLabel.textContent = originalActionText;
   }
 }
 
@@ -669,7 +836,7 @@ function validateJELines(lines) {
   }
 
   lines.forEach((line, index) => {
-    const rowNumber = index + 2;
+    const rowNumber = line.rowNumber || index + JE_TEMPLATE_DATA_START_ROW_INDEX + 1;
     const debit = parseAmount(line.debit);
     const credit = parseAmount(line.credit);
 
@@ -725,18 +892,21 @@ function formatCurrency(value) {
 async function readJELinesFromSheet() {
   return Excel.run(async (context) => {
     const sheet = context.workbook.worksheets.getItem("JE_Template");
-    const range = sheet.getUsedRange();
+    const range = sheet.getRangeByIndexes(
+      JE_TEMPLATE_DATA_START_ROW_INDEX,
+      0,
+      JE_TEMPLATE_MAX_LINES,
+      JE_TEMPLATE_COLUMN_COUNT
+    );
     range.load("values");
 
     await context.sync();
 
     const values = range.values;
 
-    if (values.length <= 1) return [];
-
     const lines = [];
 
-    for (let i = 1; i < values.length; i++) {
+    for (let i = 0; i < values.length; i++) {
       const row = values[i];
 
       const [lineNo, account, vendor, className, description, debit, credit, date] = row;
@@ -747,6 +917,7 @@ async function readJELinesFromSheet() {
 
       lines.push({
         lineNo,
+        rowNumber: JE_TEMPLATE_DATA_START_ROW_INDEX + i + 1,
         account,
         vendor,
         className,
