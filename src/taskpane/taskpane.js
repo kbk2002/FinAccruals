@@ -4,8 +4,8 @@ const API_BASE = "https://fin-accruals.vercel.app/api";
 let isQboConnected = false;
 let validationPassed = false;
 const demoSubmissionHistory = [];
-const JE_TEMPLATE_HEADER_ROW_INDEX = 10;
-const JE_TEMPLATE_DATA_START_ROW_INDEX = 11;
+const JE_TEMPLATE_HEADER_ROW_INDEX = 7;
+const JE_TEMPLATE_DATA_START_ROW_INDEX = 8;
 const JE_TEMPLATE_MAX_LINES = 200;
 const JE_TEMPLATE_COLUMN_COUNT = 8;
 const TRANSACTION_DATASETS = new Set([
@@ -526,6 +526,7 @@ async function handleCreateTemplate() {
       usedRange.load("address");
       await context.sync();
       if (!usedRange.isNullObject) {
+        usedRange.unmerge();
         usedRange.clear();
       }
 
@@ -537,7 +538,7 @@ async function handleCreateTemplate() {
         "Description",
         "Debit *",
         "Credit *",
-        "Date *",
+        "Date * (auto)",
       ];
 
       const titleRange = sheet.getRange("A1:H1");
@@ -551,7 +552,7 @@ async function handleCreateTemplate() {
       const subtitleRange = sheet.getRange("A2:H2");
       subtitleRange.values = [
         [
-          "Use dropdowns for QuickBooks fields, enter one debit or credit per row, validate, then post to the connected QuickBooks sandbox.",
+          "Enter the journal date once, complete the line details, validate, then post to the connected QuickBooks sandbox.",
           "",
           "",
           "",
@@ -565,48 +566,75 @@ async function handleCreateTemplate() {
       subtitleRange.format.font.color = "#64748b";
       subtitleRange.format.wrapText = false;
 
-      const guideRange = sheet.getRange("A4:D8");
-      guideRange.format.fill.color = "#f8fafc";
-      guideRange.format.font.color = "#334155";
-      guideRange.format.wrapText = true;
-      sheet.getRange("A4:D4").values = [["How to complete this template", "", "", ""]];
-      sheet.getRange("A4:D4").merge(false);
-      sheet.getRange("A5:A8").values = [["1"], ["2"], ["3"], ["4"]];
-      sheet.getRange("B5:D5").values = [
-        ["Choose an Account from the dropdown. This is required for every line.", "", ""],
+      const quickGuideRange = sheet.getRange("A3:H3");
+      quickGuideRange.values = [
+        [
+          "1  Set journal date",
+          "",
+          "2  Complete line details",
+          "",
+          "",
+          "3  Validate, then post",
+          "",
+          "",
+        ],
       ];
-      sheet.getRange("B6:D6").values = [
-        ["Vendor and Class are optional. Use them only when the JE line needs that detail.", "", ""],
-      ];
-      sheet.getRange("B7:D7").values = [
-        ["Enter either Debit or Credit, not both. The totals must balance before posting.", "", ""],
-      ];
-      sheet.getRange("B8:D8").values = [
-        ["Use one journal date for all lines. Then run Validate before posting.", "", ""],
-      ];
-      ["B5:D5", "B6:D6", "B7:D7", "B8:D8"].forEach((address) => {
-        sheet.getRange(address).merge(false);
-      });
-      sheet.getRange("A4:D4").format.font.bold = true;
-      sheet.getRange("A5:A8").format.font.bold = true;
-      sheet.getRange("A5:A8").format.font.color = "#2563eb";
+      sheet.getRange("A3:B3").merge(false);
+      sheet.getRange("C3:E3").merge(false);
+      sheet.getRange("F3:H3").merge(false);
+      quickGuideRange.format.fill.color = "#eef4ff";
+      quickGuideRange.format.font.color = "#1d4ed8";
+      quickGuideRange.format.font.bold = true;
+      quickGuideRange.format.wrapText = false;
 
-      const totalsRange = sheet.getRange("F4:H8");
-      totalsRange.values = [["", "", ""], ["Total debit", "", ""], ["Total credit", "", ""], ["Difference", "", ""], ["Status", "", ""]];
-      sheet.getRange("F4:H4").values = [["Control totals", "", ""]];
-      sheet.getRange("F4:H4").merge(false);
+      const headerCardRange = sheet.getRange("A4:E6");
+      headerCardRange.format.fill.color = "#f8fafc";
+      headerCardRange.format.font.color = "#334155";
+      headerCardRange.format.wrapText = true;
+      sheet.getRange("A4").values = [["Journal date *"]];
+      sheet.getRange("B4").values = [[new Date().toISOString().slice(0, 10)]];
+      sheet.getRange("C4").values = [["Memo / purpose"]];
+      sheet.getRange("D4:E4").values = [["", ""]];
+      sheet.getRange("D4:E4").merge(false);
+      sheet.getRange("A5").values = [["Prepared by"]];
+      sheet.getRange("B5").values = [[""]];
+      sheet.getRange("C5").values = [["Posting mode"]];
+      sheet.getRange("D5:E5").values = [["QuickBooks sandbox", ""]];
+      sheet.getRange("D5:E5").merge(false);
+      sheet.getRange("A6:E6").values = [
+        [
+          "Tip: choose Account, Vendor, and Class from dropdowns. Enter either Debit or Credit on each row, not both.",
+          "",
+          "",
+          "",
+          "",
+        ],
+      ];
+      sheet.getRange("A6:E6").merge(false);
+      sheet.getRange("A4:A5").format.font.bold = true;
+      sheet.getRange("C4:C5").format.font.bold = true;
+      sheet.getRange("B4").numberFormat = [["yyyy-mm-dd"]];
+      sheet.getRange("B4").format.fill.color = "#fff7ed";
+      sheet.getRange("D4:E4").format.fill.color = "#ffffff";
+      sheet.getRange("B5").format.fill.color = "#ffffff";
+      sheet.getRange("D5:E5").format.fill.color = "#ecfdf5";
+      sheet.getRange("A6:E6").format.font.color = "#64748b";
+
+      const totalsRange = sheet.getRange("F4:H6");
+      totalsRange.values = [["Total debit", "Total credit", "Difference"], ["", "", ""], ["Status", "", ""]];
+      totalsRange.format.fill.color = "#f8fafc";
+      totalsRange.format.wrapText = true;
       sheet.getRange("F4:H4").format.font.bold = true;
-      sheet.getRange("F4:H8").format.fill.color = "#f8fafc";
-      sheet.getRange("F5:F8").format.font.color = "#64748b";
-      sheet.getRange("F4:H8").format.wrapText = true;
-      sheet.getRange("G5").formulas = [[`=SUM(F${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:F${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
-      sheet.getRange("G6").formulas = [[`=SUM(G${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:G${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
-      sheet.getRange("G7").formulas = [["=G5-G6"]];
-      sheet.getRange("G8").formulas = [["=IF(ABS(G7)<0.01,\"Balanced\",\"Needs review\")"]];
-      sheet.getRange("G5:G7").numberFormat = [["$#,##0.00"], ["$#,##0.00"], ["$#,##0.00"]];
-      sheet.getRange("G8").format.font.bold = true;
+      sheet.getRange("F5").formulas = [[`=SUM(F${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:F${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
+      sheet.getRange("G5").formulas = [[`=SUM(G${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:G${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
+      sheet.getRange("H5").formulas = [["=F5-G5"]];
+      sheet.getRange("F5:H5").numberFormat = [["$#,##0.00", "$#,##0.00", "$#,##0.00"]];
+      sheet.getRange("G6:H6").merge(false);
+      sheet.getRange("F6").format.font.bold = true;
+      sheet.getRange("G6").formulas = [["=IF(ABS(H5)<0.01,\"Balanced\",\"Needs review\")"]];
+      sheet.getRange("G6").format.font.bold = true;
 
-      const sectionRange = sheet.getRange("A10:H10");
+      const sectionRange = sheet.getRange("A7:H7");
       sectionRange.values = [["Journal lines", "", "", "", "", "", "", ""]];
       sectionRange.merge(false);
       sectionRange.format.font.bold = true;
@@ -720,6 +748,9 @@ async function handleCreateTemplate() {
         JE_TEMPLATE_MAX_LINES,
         1
       );
+      dateRange.formulas = Array.from({ length: JE_TEMPLATE_MAX_LINES }, () => [
+        '=IF($B$4="","",$B$4)',
+      ]);
       dateRange.numberFormat = Array.from({ length: JE_TEMPLATE_MAX_LINES }, () => ["yyyy-mm-dd"]);
 
       const requiredInputRange = sheet.getRangeByIndexes(
@@ -730,7 +761,7 @@ async function handleCreateTemplate() {
       );
       requiredInputRange.format.fill.color = "#eff6ff";
       amountRange.format.fill.color = "#fff7ed";
-      dateRange.format.fill.color = "#fff7ed";
+      dateRange.format.fill.color = "#f8fafc";
 
       const templateRange = sheet.getRangeByIndexes(0, 0, JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES, JE_TEMPLATE_COLUMN_COUNT);
       const existingName = context.workbook.names.getItemOrNullObject("JE_TABLE");
@@ -755,6 +786,7 @@ async function handleCreateTemplate() {
       sheet.getRange("F:F").format.columnWidth = 92;
       sheet.getRange("G:G").format.columnWidth = 92;
       sheet.getRange("H:H").format.columnWidth = 105;
+      sheet.getRange("A4:H6").format.rowHeight = 24;
       sheet.getRange("A:A").format.horizontalAlignment = Excel.HorizontalAlignment.center;
       sheet.getRange("B:D").format.horizontalAlignment = Excel.HorizontalAlignment.left;
       sheet.getRange("E:E").format.horizontalAlignment = Excel.HorizontalAlignment.left;
