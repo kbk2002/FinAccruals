@@ -25,7 +25,7 @@ function normalizeAmount(value) {
 }
 
 function normalizeDate(value) {
-  if (!value) return new Date().toISOString().slice(0, 10);
+  if (!value) return null;
 
   if (typeof value === "number") {
     const excelEpoch = Date.UTC(1899, 11, 30);
@@ -35,7 +35,139 @@ function normalizeDate(value) {
   const parsed = new Date(value);
   if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
 
-  return String(value).slice(0, 10);
+  return null;
+}
+
+function roundMoney(value) {
+  return Math.round(value * 100) / 100;
+}
+
+function hasMoreThanTwoDecimals(value) {
+  if (!Number.isFinite(value)) return false;
+  return Math.abs(value * 100 - Math.round(value * 100)) > 0.000001;
+}
+
+function validateSupportedJournalLines(lines) {
+  const allowedFields = new Set([
+    "lineNo",
+    "account",
+    "vendor",
+    "className",
+    "description",
+    "debit",
+    "credit",
+    "date",
+  ]);
+  const errors = [];
+  const normalizedLines = [];
+  let totalDebit = 0;
+  let totalCredit = 0;
+  let txnDate = null;
+
+  if (!Array.isArray(lines)) {
+    return { valid: false, errors: ["Journal lines must be submitted as an array."] };
+  }
+
+  if (lines.length === 0) {
+    return { valid: false, errors: ["No journal lines were submitted."] };
+  }
+
+  if (lines.length > 200) {
+    errors.push("Journal entries are limited to 200 lines in this workflow.");
+  }
+
+  lines.forEach((line, index) => {
+    const rowNumber = index + 2;
+    const rawLine = line && typeof line === "object" && !Array.isArray(line) ? line : {};
+    const unknownFields = Object.keys(rawLine).filter((key) => !allowedFields.has(key));
+
+    if (unknownFields.length) {
+      errors.push(`Row ${rowNumber}: unsupported field(s): ${unknownFields.join(", ")}.`);
+    }
+
+    const account = normalizeText(rawLine.account);
+    const vendor = normalizeText(rawLine.vendor);
+    const className = normalizeText(rawLine.className);
+    const description = normalizeText(rawLine.description);
+    const debit = normalizeAmount(rawLine.debit);
+    const credit = normalizeAmount(rawLine.credit);
+    const rowDate = normalizeDate(rawLine.date);
+
+    if (!account) {
+      errors.push(`Row ${rowNumber}: account is required.`);
+    }
+
+    if (account.length > 100) {
+      errors.push(`Row ${rowNumber}: account is too long.`);
+    }
+
+    if (vendor.length > 100) {
+      errors.push(`Row ${rowNumber}: vendor is too long.`);
+    }
+
+    if (className.length > 100) {
+      errors.push(`Row ${rowNumber}: class is too long.`);
+    }
+
+    if (description.length > 4000) {
+      errors.push(`Row ${rowNumber}: description is too long.`);
+    }
+
+    if (!rowDate) {
+      errors.push(`Row ${rowNumber}: date is required and must be valid.`);
+    } else if (!txnDate) {
+      txnDate = rowDate;
+    } else if (rowDate !== txnDate) {
+      errors.push(`Row ${rowNumber}: all lines must use the same journal date (${txnDate}).`);
+    }
+
+    if (debit === null || credit === null) {
+      errors.push(`Row ${rowNumber}: debit and credit must be numeric.`);
+      return;
+    }
+
+    if (debit < 0 || credit < 0) {
+      errors.push(`Row ${rowNumber}: negative amounts are not allowed.`);
+    }
+
+    if (hasMoreThanTwoDecimals(debit) || hasMoreThanTwoDecimals(credit)) {
+      errors.push(`Row ${rowNumber}: debit and credit can have at most two decimal places.`);
+    }
+
+    if ((debit > 0 && credit > 0) || (debit <= 0 && credit <= 0)) {
+      errors.push(`Row ${rowNumber}: enter an amount on exactly one side.`);
+    }
+
+    totalDebit = roundMoney(totalDebit + debit);
+    totalCredit = roundMoney(totalCredit + credit);
+
+    normalizedLines.push({
+      account,
+      vendor,
+      className,
+      description,
+      debit,
+      credit,
+      date: rowDate,
+    });
+  });
+
+  if (totalDebit <= 0 && totalCredit <= 0) {
+    errors.push("Journal total must be greater than zero.");
+  }
+
+  if (Math.abs(totalDebit - totalCredit) > 0.01) {
+    errors.push(`Journal entry is unbalanced: debits ${totalDebit.toFixed(2)}, credits ${totalCredit.toFixed(2)}.`);
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+    lines: normalizedLines,
+    txnDate,
+    totalDebit,
+    totalCredit,
+  };
 }
 
 function createLookup(items, keys) {
@@ -91,32 +223,13 @@ async function loadReferenceLookups(session) {
   };
 }
 
-function buildJournalEntryPayload(lines, lookups) {
-  if (!Array.isArray(lines) || lines.length === 0) {
-    throw new Error("No journal lines were submitted.");
-  }
-
-  const txnDate = normalizeDate(lines[0].date);
+function buildJournalEntryPayload(validation, lookups) {
+  const lines = validation.lines;
+  const txnDate = validation.txnDate;
   const qboLines = lines.map((line, index) => {
     const rowNumber = index + 2;
-    const debit = normalizeAmount(line.debit);
-    const credit = normalizeAmount(line.credit);
-
-    if (!normalizeText(line.account)) {
-      throw new Error(`Row ${rowNumber}: account is required.`);
-    }
-
-    if (debit === null || credit === null) {
-      throw new Error(`Row ${rowNumber}: debit and credit must be numeric.`);
-    }
-
-    if (debit < 0 || credit < 0) {
-      throw new Error(`Row ${rowNumber}: negative amounts are not allowed.`);
-    }
-
-    if ((debit > 0 && credit > 0) || (debit <= 0 && credit <= 0)) {
-      throw new Error(`Row ${rowNumber}: enter an amount on exactly one side.`);
-    }
+    const debit = line.debit;
+    const credit = line.credit;
 
     const amount = debit > 0 ? debit : credit;
     const postingType = debit > 0 ? "Debit" : "Credit";
@@ -179,8 +292,16 @@ export default async function handler(req, res) {
     if (!session) return res.status(401).json({ error: "QuickBooks is not connected." });
 
     const { lines } = parseJsonBody(req);
+    const validation = validateSupportedJournalLines(lines);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: validation.errors.join(" "),
+        errors: validation.errors,
+      });
+    }
+
     const lookups = await loadReferenceLookups(session);
-    const payload = buildJournalEntryPayload(lines, lookups);
+    const payload = buildJournalEntryPayload(validation, lookups);
     const journalEntry = await qboCreate(session, "JournalEntry", payload);
 
     return res.status(200).json({
