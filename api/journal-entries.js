@@ -50,6 +50,7 @@ function hasMoreThanTwoDecimals(value) {
 function validateSupportedJournalLines(lines) {
   const allowedFields = new Set([
     "lineNo",
+    "rowNumber",
     "account",
     "vendor",
     "className",
@@ -77,8 +78,10 @@ function validateSupportedJournalLines(lines) {
   }
 
   lines.forEach((line, index) => {
-    const rowNumber = index + 2;
     const rawLine = line && typeof line === "object" && !Array.isArray(line) ? line : {};
+    const submittedRowNumber = Number(rawLine.rowNumber);
+    const rowNumber =
+      Number.isInteger(submittedRowNumber) && submittedRowNumber > 0 ? submittedRowNumber : index + 2;
     const unknownFields = Object.keys(rawLine).filter((key) => !allowedFields.has(key));
 
     if (unknownFields.length) {
@@ -142,6 +145,7 @@ function validateSupportedJournalLines(lines) {
     totalCredit = roundMoney(totalCredit + credit);
 
     normalizedLines.push({
+      rowNumber,
       account,
       vendor,
       className,
@@ -227,7 +231,7 @@ function buildJournalEntryPayload(validation, lookups) {
   const lines = validation.lines;
   const txnDate = validation.txnDate;
   const qboLines = lines.map((line, index) => {
-    const rowNumber = index + 2;
+    const rowNumber = line.rowNumber || index + 2;
     const debit = line.debit;
     const credit = line.credit;
 
