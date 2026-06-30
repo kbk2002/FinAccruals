@@ -542,9 +542,11 @@ async function handleCreateTemplate() {
 
       const titleRange = sheet.getRange("A1:H1");
       titleRange.values = [["FinAccruals Journal Entry Template", "", "", "", "", "", "", ""]];
+      titleRange.merge(false);
       titleRange.format.font.bold = true;
       titleRange.format.font.size = 18;
       titleRange.format.font.color = "#0f172a";
+      titleRange.format.wrapText = false;
 
       const subtitleRange = sheet.getRange("A2:H2");
       subtitleRange.values = [
@@ -559,33 +561,44 @@ async function handleCreateTemplate() {
           "",
         ],
       ];
+      subtitleRange.merge(false);
       subtitleRange.format.font.color = "#64748b";
+      subtitleRange.format.wrapText = false;
 
       const guideRange = sheet.getRange("A4:D8");
-      guideRange.values = [
-        ["How to complete this template", "", "", ""],
-        ["1", "Choose an Account from the dropdown. This is required for every line.", "", ""],
-        ["2", "Vendor and Class are optional. Use them only when the JE line needs that detail.", "", ""],
-        ["3", "Enter either Debit or Credit, not both. The totals must balance before posting.", "", ""],
-        ["4", "Use one journal date for all lines. Then run Validate before posting.", "", ""],
-      ];
       guideRange.format.fill.color = "#f8fafc";
       guideRange.format.font.color = "#334155";
+      guideRange.format.wrapText = true;
+      sheet.getRange("A4:D4").values = [["How to complete this template", "", "", ""]];
+      sheet.getRange("A4:D4").merge(false);
+      sheet.getRange("A5:A8").values = [["1"], ["2"], ["3"], ["4"]];
+      sheet.getRange("B5:D5").values = [
+        ["Choose an Account from the dropdown. This is required for every line.", "", ""],
+      ];
+      sheet.getRange("B6:D6").values = [
+        ["Vendor and Class are optional. Use them only when the JE line needs that detail.", "", ""],
+      ];
+      sheet.getRange("B7:D7").values = [
+        ["Enter either Debit or Credit, not both. The totals must balance before posting.", "", ""],
+      ];
+      sheet.getRange("B8:D8").values = [
+        ["Use one journal date for all lines. Then run Validate before posting.", "", ""],
+      ];
+      ["B5:D5", "B6:D6", "B7:D7", "B8:D8"].forEach((address) => {
+        sheet.getRange(address).merge(false);
+      });
       sheet.getRange("A4:D4").format.font.bold = true;
       sheet.getRange("A5:A8").format.font.bold = true;
       sheet.getRange("A5:A8").format.font.color = "#2563eb";
 
       const totalsRange = sheet.getRange("F4:H8");
-      totalsRange.values = [
-        ["Control totals", "", ""],
-        ["Total debit", "", ""],
-        ["Total credit", "", ""],
-        ["Difference", "", ""],
-        ["Status", "", ""],
-      ];
+      totalsRange.values = [["", "", ""], ["Total debit", "", ""], ["Total credit", "", ""], ["Difference", "", ""], ["Status", "", ""]];
+      sheet.getRange("F4:H4").values = [["Control totals", "", ""]];
+      sheet.getRange("F4:H4").merge(false);
       sheet.getRange("F4:H4").format.font.bold = true;
       sheet.getRange("F4:H8").format.fill.color = "#f8fafc";
       sheet.getRange("F5:F8").format.font.color = "#64748b";
+      sheet.getRange("F4:H8").format.wrapText = true;
       sheet.getRange("G5").formulas = [[`=SUM(F${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:F${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
       sheet.getRange("G6").formulas = [[`=SUM(G${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:G${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
       sheet.getRange("G7").formulas = [["=G5-G6"]];
@@ -595,6 +608,7 @@ async function handleCreateTemplate() {
 
       const sectionRange = sheet.getRange("A10:H10");
       sectionRange.values = [["Journal lines", "", "", "", "", "", "", ""]];
+      sectionRange.merge(false);
       sectionRange.format.font.bold = true;
       sectionRange.format.font.color = "#1d4ed8";
 
@@ -732,13 +746,21 @@ async function handleCreateTemplate() {
       context.workbook.names.add("JE_TABLE", templateRange);
 
       sheet.getRange("A1:H211").format.font.name = "Aptos";
-      sheet.getRange("A1:H211").format.autofitColumns();
       sheet.getRange("A1:H211").format.autofitRows();
-      sheet.getRange("B:B").format.columnWidth = 170;
-      sheet.getRange("C:C").format.columnWidth = 130;
-      sheet.getRange("D:D").format.columnWidth = 130;
-      sheet.getRange("E:E").format.columnWidth = 220;
-      sheet.getRange("F:H").format.columnWidth = 95;
+      sheet.getRange("A:A").format.columnWidth = 52;
+      sheet.getRange("B:B").format.columnWidth = 190;
+      sheet.getRange("C:C").format.columnWidth = 145;
+      sheet.getRange("D:D").format.columnWidth = 140;
+      sheet.getRange("E:E").format.columnWidth = 260;
+      sheet.getRange("F:F").format.columnWidth = 92;
+      sheet.getRange("G:G").format.columnWidth = 92;
+      sheet.getRange("H:H").format.columnWidth = 105;
+      sheet.getRange("A:A").format.horizontalAlignment = Excel.HorizontalAlignment.center;
+      sheet.getRange("B:D").format.horizontalAlignment = Excel.HorizontalAlignment.left;
+      sheet.getRange("E:E").format.horizontalAlignment = Excel.HorizontalAlignment.left;
+      sheet.getRange("E:E").format.wrapText = true;
+      sheet.getRange("F:G").format.horizontalAlignment = Excel.HorizontalAlignment.right;
+      sheet.getRange("H:H").format.horizontalAlignment = Excel.HorizontalAlignment.center;
       sheet.freezePanes.freezeRows(JE_TEMPLATE_HEADER_ROW_INDEX + 1);
 
       sheet.activate();
