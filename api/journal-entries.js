@@ -59,6 +59,7 @@ function validateSupportedJournalLines(lines) {
     "credit",
     "date",
   ]);
+
   const errors = [];
   const normalizedLines = [];
   let totalDebit = 0;
@@ -71,6 +72,24 @@ function validateSupportedJournalLines(lines) {
 
   if (lines.length === 0) {
     return { valid: false, errors: ["No journal lines were submitted."] };
+  }
+
+  // 🔥 NEW: Remove blank rows before validation
+  lines = lines.filter((line) => {
+    const account = normalizeText(line.account);
+    const debit = normalizeAmount(line.debit);
+    const credit = normalizeAmount(line.credit);
+
+    const isBlank =
+      !account &&
+      (!debit || debit === 0) &&
+      (!credit || credit === 0);
+
+    return !isBlank;
+  });
+
+  if (lines.length === 0) {
+    return { valid: false, errors: ["No journal lines with data were submitted."] };
   }
 
   if (lines.length > 200) {
