@@ -2,96 +2,117 @@
 
 ## Overview
 
-FinAccruals, presented in the Excel interface as **LedgerFlow for Excel**, is a Microsoft Excel Add-in built with Office.js to streamline accounting preparation workflows directly inside Excel.
+FinAccruals, originally referred to as **LedgerFlow** in the project charter, is a Microsoft Excel add-in for accounting automation. The add-in lets accounting users stay inside Excel while connecting to QuickBooks Online, pulling accounting reference data, preparing journal entries, validating them, and posting approved entries back to QuickBooks.
 
-The application connects an Excel workbook to QuickBooks Online through OAuth 2.0, imports accounting data from a connected QuickBooks sandbox company, creates dedicated worksheets, generates a standardized journal-entry template, validates journal entries, and provides a foundation for future posting and approval workflows.
+The current implementation is an MVP focused on the **QuickBooks Online sandbox workflow**. Xero and production QuickBooks readiness are future phases.
 
-The current repository and Intuit Developer application use the **FinAccruals** name. The task-pane interface uses the **LedgerFlow** product identity.
+## Current MVP Status
 
----
-
-## Current Status
-
-The project has completed the QuickBooks OAuth and accounting-data import phase of the MVP.
+The QuickBooks sandbox MVP is working end to end.
 
 Users can currently:
 
-- Connect a QuickBooks Online sandbox company.
-- Disconnect the active QuickBooks connection.
-- View the connected QuickBooks company name.
-- Pull Accounts into Excel.
-- Pull Vendors into Excel.
-- Pull Customers into Excel.
-- Pull Classes into Excel.
-- Select and import additional QuickBooks tables.
-- Create or refresh a journal-entry template.
-- Validate journal-entry structure and balance.
-- Submit demonstration journal entries locally.
-- View demonstration submission history.
-- Use the deployed application in Excel for the web.
-- Use Vercel-hosted backend APIs.
+- Open the add-in inside Excel.
+- Connect to a QuickBooks Online sandbox company through OAuth 2.0.
+- Disconnect the active QuickBooks session.
+- See connected company status.
+- Pull QuickBooks master data into Excel:
+  - Accounts
+  - Vendors
+  - Customers
+  - Classes
+- Import additional QuickBooks datasets through the "More QuickBooks data" dropdown.
+- Generate a guided journal-entry worksheet.
+- Use QuickBooks-powered dropdowns for journal entry fields.
+- Validate journal entries before posting.
+- Post a validated journal entry to QuickBooks sandbox.
+- See success and failure messages.
 
-All QuickBooks data currently comes from a QuickBooks **sandbox company**. Sandbox records are fictional test data supplied by Intuit or manually created during development.
+The app has already successfully posted a journal entry to the QuickBooks sandbox during testing.
 
----
+## Product Naming Note
 
-## What Has Been Completed
+The original project documents use the name **LedgerFlow**. During development, the product/repository name moved toward **FinAccruals**.
 
-### Excel Add-in Foundation
+Current naming convention:
 
-- Created the Office.js Excel Add-in project structure.
-- Built the LedgerFlow task-pane interface.
-- Added Excel ribbon integration through `manifest.xml`.
-- Configured add-in branding, logos, and icons.
-- Configured the Webpack build pipeline.
-- Added production and development URL handling.
-- Connected the GitHub repository to Vercel.
-- Validated the Office Add-in manifest.
-- Tested the task pane in Excel for the web.
+- Repository/internal project name: `FinAccruals`
+- Earlier project/charter name: `LedgerFlow`
+- UI may still contain both names while branding is finalized
 
-### QuickBooks OAuth Integration
+A final branding cleanup can be done later once the organization confirms the official product name.
 
-- Created an Intuit Developer workspace and QuickBooks application.
-- Added QuickBooks OAuth 2.0 authorization.
-- Added OAuth state validation.
-- Added authorization-code exchange.
-- Added secure access-token and refresh-token handling.
-- Added automatic access-token refresh.
-- Added QuickBooks connection-status checking.
-- Added QuickBooks disconnect and token revocation.
-- Added support for the QuickBooks sandbox API environment.
-- Added secure encrypted HTTP-only session cookies.
+## What This Project Solves
 
-### Excel Workbook Integration
+Accounting teams often prepare data in Excel but still manually enter or upload that data into accounting platforms. This creates:
 
-- Added automated `Accounts` worksheet creation.
-- Added automated `Vendors` worksheet creation.
-- Added automated `Customers` worksheet creation.
-- Added automated `Classes` worksheet creation.
-- Added dynamic worksheet creation for additional QuickBooks tables.
-- Added safe worksheet refresh behavior.
-- Added automatic headers and worksheet formatting.
-- Added column and row auto-sizing.
-- Added workbook navigation to the newly imported worksheet.
-- Added `JE_Template` worksheet creation.
-- Added the `JE_TABLE` workbook name.
+- Repetitive manual work
+- Higher risk of data-entry errors
+- Slow journal-entry posting
+- Friction between Excel workflows and accounting systems
 
-### Primary QuickBooks Data Synchronization
+FinAccruals turns Excel into a connected accounting preparation layer. It allows users to pull accounting data from QuickBooks, prepare entries in Excel, validate them, and post them back through the API.
 
-The task pane contains direct synchronization buttons for the most frequently used accounting reference data:
+## Current Architecture
 
-- Accounts
-- Vendors
-- Customers
-- Classes
+```text
+Excel Add-in UI
+src/taskpane/
+        |
+        v
+Vercel Serverless APIs
+api/
+        |
+        v
+Shared QuickBooks helpers
+server/
+        |
+        v
+QuickBooks Online Sandbox API
+```
 
-Each synchronization refreshes a dedicated worksheet using records returned by the connected QuickBooks company.
+Main parts:
+
+- `src/taskpane/taskpane.html` - Excel task pane markup
+- `src/taskpane/taskpane.css` - task pane styling
+- `src/taskpane/taskpane.js` - Office.js workbook logic and UI behavior
+- `manifest.xml` - Office add-in manifest
+- `api/` - Vercel serverless API endpoints
+- `server/qbo.js` - QuickBooks OAuth/API helper functions
+- `server/session.js` - encrypted session cookie handling
+- `assets/` - logo and add-in icon assets
+
+## Key Features
+
+### QuickBooks OAuth
+
+The add-in connects to QuickBooks Online through OAuth 2.0.
+
+Implemented endpoints:
+
+- `GET /api/qbo/start`
+- `GET /api/qbo/callback`
+- `GET /api/qbo/status`
+- `POST /api/qbo/disconnect`
+
+The current environment is configured for QuickBooks sandbox testing.
+
+### Master Data Sync
+
+The add-in can create or refresh Excel worksheets from QuickBooks data:
+
+- `Accounts`
+- `Vendors`
+- `Customers`
+- `Classes`
+
+These are used both for review and for journal-entry dropdowns.
 
 ### More QuickBooks Data
 
-The task pane includes a **More QuickBooks Data** selector for importing other supported QuickBooks API entities.
+The add-in also supports importing additional QuickBooks datasets:
 
-#### Reference Data
+Reference data:
 
 - Products & Services
 - Employees
@@ -100,7 +121,7 @@ The task pane includes a **More QuickBooks Data** selector for importing other s
 - Payment Methods
 - Tax Codes
 
-#### Transaction Data
+Transaction data:
 
 - Invoices
 - Bills
@@ -110,751 +131,396 @@ The task pane includes a **More QuickBooks Data** selector for importing other s
 - Purchase Orders
 - Journal Entries
 
-When a user selects a table and clicks **Import table**, the add-in:
+Transaction datasets support date-range filtering.
 
-1. Calls the deployed Vercel API.
-2. Queries the connected QuickBooks sandbox company.
-3. Maps the QuickBooks response into an Excel-friendly structure.
-4. Creates or refreshes the corresponding worksheet.
-5. Shows the number of imported records.
+### Journal Entry Workspace
 
-Transaction imports currently contain summary or header-level information. Detailed transaction-line worksheets are planned for a future phase.
+The add-in generates a `JE_Template` worksheet for journal-entry preparation.
 
-### Journal Entry Workflow
+The current template includes:
 
-- Added journal-entry template creation.
-- Added required account validation.
-- Added required date validation.
-- Added numeric debit and credit validation.
-- Prevented negative journal amounts.
-- Required an amount on exactly one side of each line.
-- Added debit and credit balance validation.
-- Added validation result messaging.
-- Added submit-button state management.
-- Added demonstration journal submission references.
-- Added demonstration submission history.
+- One journal date at the top
+- Memo/purpose field
+- Posting mode indicator
+- Line-entry table
+- QuickBooks account dropdown
+- QuickBooks vendor dropdown
+- QuickBooks class dropdown
+- Debit and credit columns
+- Auto-filled journal date column
+- Control totals
+- Balance status
 
-Journal entries are **not yet posted to QuickBooks**. The current submit workflow remains a controlled demonstration workflow.
-
-### Backend API Integration
-
-- Deployed backend API routes through Vercel Serverless Functions.
-- Added QuickBooks OAuth routes.
-- Added QuickBooks data-query helpers.
-- Added secure session helpers.
-- Added Accounts API integration.
-- Added Vendors API integration.
-- Added Customers API integration.
-- Added Classes API integration.
-- Added the More Data API integration.
-- Added the API health endpoint.
-- Added the demonstration history endpoint.
-- Kept the deployment within the Vercel Hobby-plan serverless-function limit.
-
----
-
-## Current Working Features
-
-- ✅ QuickBooks Online OAuth 2.0 connection
-- ✅ QuickBooks sandbox authorization
-- ✅ Secure Connect and Disconnect
-- ✅ Connected-company display
-- ✅ Pull Accounts
-- ✅ Pull Vendors
-- ✅ Pull Customers
-- ✅ Pull Classes
-- ✅ Import Products & Services
-- ✅ Import Employees
-- ✅ Import Locations
-- ✅ Import Payment Terms
-- ✅ Import Payment Methods
-- ✅ Import Tax Codes
-- ✅ Import Invoices
-- ✅ Import Bills
-- ✅ Import Customer Payments
-- ✅ Import Expenses
-- ✅ Import Deposits
-- ✅ Import Purchase Orders
-- ✅ Import Journal Entries
-- ✅ Create Journal Entry Template
-- ✅ Validate Journal Entry Balance
-- ✅ Submit Demo Journal Entry
-- ✅ Load Demo Submission History
-- ✅ Excel ↔ Vercel API Integration
-- ✅ QuickBooks API ↔ Excel Integration
-- ✅ Vercel Deployment
-- ✅ Excel for the web testing
-
----
-
-## How QuickBooks Data Works
-
-The labels shown in the **More QuickBooks Data** selector are configured by FinAccruals based on supported QuickBooks Accounting API entities.
-
-The actual imported rows are retrieved from the connected QuickBooks company.
+The supported journal-entry columns are:
 
 ```text
-Dropdown label
-    |
-    v
-FinAccruals dataset configuration
-    |
-    v
-QuickBooks Accounting API query
-    |
-    v
-Connected sandbox-company records
-    |
-    v
-Excel worksheet
+Line # | Account * | Vendor | Class | Description | Debit * | Credit * | Date *
 ```
 
-QuickBooks does not provide one API endpoint that dynamically lists every available accounting table. FinAccruals therefore maintains a controlled catalog of supported datasets.
+### Journal Entry Validation
 
-Some QuickBooks API records may not appear in the current QuickBooks web interface. For example, a sandbox may contain legacy `Employee` API records while the newer **Team → Employees** screen appears empty. In that case, FinAccruals is still displaying genuine records returned by the QuickBooks Accounting API.
+Validation exists in both the Excel add-in and backend API.
 
----
+The supported JE validation checks include:
 
-## Architecture
+- At least one journal line exists
+- Account is required
+- Date is required
+- All lines use the same journal date
+- Debit and credit are numeric
+- Negative amounts are not allowed
+- Debit/credit values can have at most two decimals
+- Each row must have either debit or credit, not both
+- Total debits must equal total credits
+- Referenced accounts/vendors/classes must exist in QuickBooks
+- Unsupported submitted fields are rejected
 
-```text
-Microsoft Excel
-    |
-    | Office.js
-    v
-LedgerFlow Task Pane
-    |
-    | HTTPS requests with secure session cookie
-    v
-Vercel Serverless API
-    |
-    | OAuth 2.0 and Accounting API requests
-    v
-QuickBooks Online Sandbox
-```
+### Journal Entry Posting
 
-### Frontend Responsibilities
+Validated journal entries can be posted to the connected QuickBooks sandbox company using:
 
-- Render the Excel task pane.
-- Manage workflow navigation.
-- Open the QuickBooks authorization dialog.
-- Display connection state.
-- Request QuickBooks datasets.
-- Create and refresh Excel worksheets.
-- Create the journal-entry template.
-- Validate journal-entry data.
-- Display sync and validation results.
+- `POST /api/journal-entries`
 
-### Backend Responsibilities
-
-- Generate QuickBooks authorization URLs.
-- Validate OAuth state.
-- Exchange authorization codes for tokens.
-- Refresh expired access tokens.
-- Encrypt session information.
-- Revoke QuickBooks tokens.
-- Query supported QuickBooks entities.
-- Map QuickBooks responses into workbook-friendly data.
-- Prevent secrets from being exposed to frontend code.
-
----
-
-## Technology Stack
-
-### Frontend
-
-- JavaScript
-- HTML
-- CSS
-- Microsoft Office.js
-
-### Build and Development
-
-- Node.js
-- npm
-- Webpack
-- Babel
-- Office Add-in debugging tools
-- Office Add-in manifest validation
-- ESLint and Office Add-in linting
-
-### Backend and Deployment
-
-- Vercel Serverless Functions
-- QuickBooks Online Accounting API
-- Intuit OAuth 2.0
-- GitHub
-
-### Planned
-
-- Database persistence
-- Multi-user authentication
-- Audit logging
-- QuickBooks journal posting
-- Xero integration
-- Production QuickBooks approval and compliance
-
----
-
-## Project Structure
-
-```text
-FinAccruals/
-|
-|-- api/
-|   |-- accounts.js
-|   |-- classes.js
-|   |-- customers.js
-|   |-- health.js
-|   |-- history.js
-|   |-- more-data.js
-|   |-- vendors.js
-|   `-- qbo/
-|       |-- callback.js
-|       |-- disconnect.js
-|       |-- start.js
-|       `-- status.js
-|
-|-- server/
-|   |-- qbo.js
-|   `-- session.js
-|
-|-- src/
-|   |-- taskpane/
-|   |   |-- taskpane.html
-|   |   |-- taskpane.css
-|   |   `-- taskpane.js
-|   |
-|   `-- commands/
-|       |-- commands.html
-|       `-- commands.js
-|
-|-- assets/
-|   |-- icon-16.png
-|   |-- icon-32.png
-|   |-- icon-64.png
-|   |-- icon-80.png
-|   |-- icon-128.png
-|   |-- logo-filled.png
-|   `-- additional brand assets
-|
-|-- manifest.xml
-|-- package.json
-|-- package-lock.json
-|-- webpack.config.js
-`-- README.md
-```
-
-The shared QuickBooks and session helpers are stored under `server/` instead of `api/`. This prevents Vercel from counting helper modules as separate Serverless Functions and keeps the deployment compatible with the Vercel Hobby plan.
-
----
+The backend resolves Excel-entered account/vendor/class names to QuickBooks IDs before creating the QuickBooks `JournalEntry`.
 
 ## API Endpoints
 
-### Application
+Current API files:
 
 ```text
-GET /api/health
-GET /api/history
+api/health.js
+api/accounts.js
+api/vendors.js
+api/customers.js
+api/classes.js
+api/more-data.js
+api/history.js
+api/journal-entries.js
+api/qbo/start.js
+api/qbo/callback.js
+api/qbo/status.js
+api/qbo/disconnect.js
 ```
 
-### Primary QuickBooks Data
+Important note: this project has been designed around Vercel Hobby limits. Adding too many separate API files may exceed the Hobby serverless function limit. If more endpoints are needed, consolidate routes or move to an organization-approved backend.
 
-```text
-GET /api/accounts
-GET /api/vendors
-GET /api/customers
-GET /api/classes
+## Environment Variables
+
+The deployed backend requires QuickBooks and session configuration.
+
+Required variables:
+
+```env
+QBO_CLIENT_ID=
+QBO_CLIENT_SECRET=
+QBO_REDIRECT_URI=https://fin-accruals.vercel.app/api/qbo/callback
+QBO_ENVIRONMENT=sandbox
+SESSION_SECRET=
 ```
 
-### Additional QuickBooks Data
+Do not commit real credentials to GitHub.
 
-```text
-GET /api/more-data?dataset=<dataset-key>
-```
+For local testing, use a local `.env` file or environment configuration supported by the hosting platform.
 
-Supported dataset keys:
+## QuickBooks Developer Setup
 
-```text
-items
-employees
-locations
-terms
-paymentMethods
-taxCodes
-invoices
-bills
-payments
-expenses
-deposits
-purchaseOrders
-journalEntries
-```
-
-### QuickBooks OAuth
-
-```text
-GET  /api/qbo/start
-GET  /api/qbo/callback
-GET  /api/qbo/status
-POST /api/qbo/disconnect
-```
-
----
-
-## Production Deployment
-
-### Production URLs
-
-```text
-https://fin-accruals.vercel.app/taskpane.html
-https://fin-accruals.vercel.app/commands.html
-https://fin-accruals.vercel.app/manifest.xml
-https://fin-accruals.vercel.app/api/health
-https://fin-accruals.vercel.app/api/qbo/status
-```
-
-### Vercel Hobby Plan
-
-The current deployment uses 11 Serverless Functions and remains within the Hobby-plan limit of 12.
-
-Files under `server/` are shared modules and are not intended to become independent API routes.
-
----
-
-## Intuit Developer Setup
-
-### Requirements
-
-- Intuit Developer account
-- FinAccruals QuickBooks application
-- QuickBooks sandbox company
-- Development Client ID
-- Development Client Secret
-
-### Redirect URI
-
-Add the following exact URI under the application's **Development Redirect URIs**:
+1. Create or open an Intuit Developer account.
+2. Create a QuickBooks Online app.
+3. Use sandbox mode for MVP testing.
+4. Add the redirect URI:
 
 ```text
 https://fin-accruals.vercel.app/api/qbo/callback
 ```
 
-The redirect URI must match exactly. Do not add:
+5. Copy the client ID and client secret into the deployment environment variables.
+6. Confirm the app has access to Accounting APIs.
 
-- A trailing slash
-- Extra spaces
-- A different protocol
-- A Preview deployment domain
+For local development, a localhost redirect URI may also be needed if testing OAuth locally.
 
-### QuickBooks Environment
+## QuickBooks Sandbox Testing
 
-The MVP uses:
+This MVP currently uses QuickBooks sandbox data.
 
-```text
-QBO_ENVIRONMENT=sandbox
-```
+Sandbox data may include sample accounts such as:
 
-Production credentials and real-company connections are not currently enabled.
+- Checking
+- Rent or Lease
+- Services
+- Accounts Payable
+- Accounts Receivable
+- Landscaping Services
 
----
+That data comes from the connected QuickBooks sandbox company. It is not hardcoded in the add-in.
 
-## Vercel Environment Variables
+To let teammates test the same sandbox company:
 
-Configure these variables under the Vercel project:
+1. Open the QuickBooks sandbox company.
+2. Go to QuickBooks settings.
+3. Open user management / manage users.
+4. Invite teammates to the same QuickBooks company.
+5. Ask them to accept the invite.
+6. When connecting the add-in, they must select the same QuickBooks company.
 
-```text
-QBO_CLIENT_ID
-QBO_CLIENT_SECRET
-QBO_REDIRECT_URI
-QBO_ENVIRONMENT
-SESSION_SECRET
-```
+Inviting teammates to the Intuit Developer workspace shares the app configuration, but it does not automatically make them use the same QuickBooks company data.
 
-Recommended values:
+## Installation
 
-```text
-QBO_REDIRECT_URI=https://fin-accruals.vercel.app/api/qbo/callback
-QBO_ENVIRONMENT=sandbox
-```
+Install dependencies:
 
-Apply the variables to:
-
-- Production
-- Preview
-- Development
-
-`SESSION_SECRET` should be a long, random value used to encrypt session data. If it is not configured, the current backend falls back to deriving its encryption key from `QBO_CLIENT_SECRET`.
-
-Never commit environment variables, Client Secrets, OAuth tokens, or `.env` files to GitHub.
-
----
-
-## Running the Excel Add-in
-
-### Option 1: Excel for the Web
-
-1. Open Excel for the web.
-2. Open or create a workbook.
-3. Open the Add-ins interface.
-4. Select **Upload My Add-in**.
-5. Upload `manifest.xml`.
-6. Open FinAccruals from the Excel ribbon.
-7. Connect QuickBooks.
-
-Excel for the web is the recommended environment for testing the deployed Vercel application.
-
-### Option 2: Excel Desktop Development
-
-Open PowerShell in the repository:
-
-```powershell
-cd "C:\path\to\FinAccruals"
-npm install
-npm start
-```
-
-The Office Add-in debugging tools should:
-
-1. Start the local development server.
-2. Register `manifest.xml`.
-3. Open Microsoft Excel.
-4. Load the add-in for debugging.
-
-If this message appears:
-
-```text
-'office-addin-debugging' is not recognized
-```
-
-Run:
-
-```powershell
+```bash
 npm install
 ```
 
-Make sure the command is executed inside the same project directory that contains `package.json`.
-
-Excel desktop may not show the same **Upload My Add-in** option available in Excel for the web. Manual desktop sideloading may require a trusted add-in catalog.
-
----
-
-## Local Development Setup
-
-### Prerequisites
-
-- Node.js
-- npm
-- Git
-- Microsoft Excel
-- Intuit Developer account
-- QuickBooks sandbox company
-
-### Installation
+Or, for a clean install from the lockfile:
 
 ```bash
-git clone https://github.com/kbk2002/FinAccruals.git
-cd FinAccruals
-npm install
+npm ci
 ```
 
-### Development Server
+## Local Development
 
-```bash
-npm start
-```
-
-### Stop Development Session
-
-```bash
-npm stop
-```
-
-### Run Webpack Development Server
+Start the development server:
 
 ```bash
 npm run dev-server
 ```
 
-### Production Build
+Start Office add-in debugging:
+
+```bash
+npm start
+```
+
+If `office-addin-debugging` is not recognized, install dependencies first:
+
+```bash
+npm ci
+```
+
+Then run:
+
+```bash
+npm start
+```
+
+## Build
+
+Create a production build:
 
 ```bash
 npm run build
 ```
 
-### Lint
+Create a development build:
 
 ```bash
-npm run lint
+npm run build:dev
 ```
 
-### Validate Manifest
+Validate the Office manifest:
 
 ```bash
 npm run validate
 ```
 
----
+## Deployment
 
-## Testing the Application
+The current MVP is deployed through Vercel.
 
-### Test QuickBooks Connection
+Deployment requirements:
 
-1. Open the FinAccruals task pane.
-2. Click **Connect** under QuickBooks Online.
-3. Sign in to Intuit.
-4. Select the sandbox company.
-5. Click **Connect** on the Intuit authorization screen.
+- GitHub repository connected to Vercel
+- Environment variables configured in Vercel
+- `manifest.xml` points to the deployed task pane URLs
+- Intuit Developer redirect URI matches the deployed callback URL exactly
+
+Current production-style URL:
+
+```text
+https://fin-accruals.vercel.app
+```
+
+## How to Test the MVP
+
+### 1. Open the add-in
+
+Open Excel for the web and load the add-in using the deployed manifest.
+
+### 2. Connect QuickBooks
+
+Click the QuickBooks connect button and authorize the sandbox company.
 
 Expected result:
 
-- The authorization window closes.
-- The task pane shows **Connected**.
-- The QuickBooks company name appears.
-- Sync and import controls become enabled.
-- The Connect action changes to Disconnect.
+- Add-in shows connected status
+- Company name appears in the task pane
 
-### Test Accounts
+### 3. Sync master data
 
-1. Click **Accounts → Sync**.
-2. Open the `Accounts` worksheet.
+Use the sync buttons for:
 
-Expected result:
-
-- The worksheet is created or refreshed.
-- QuickBooks account records are displayed.
-
-### Test Vendors
-
-1. Click **Vendors → Sync**.
-2. Open the `Vendors` worksheet.
+- Accounts
+- Vendors
+- Customers
+- Classes
 
 Expected result:
 
-- The worksheet is created or refreshed.
-- QuickBooks vendor records are displayed.
+- Matching Excel worksheets are created or refreshed
+- Rows should match data from the connected QuickBooks sandbox company
 
-### Test Customers
+### 4. Import more QuickBooks data
 
-1. Click **Customers → Sync**.
-2. Open the `Customers` worksheet.
-
-Expected result:
-
-- The worksheet is created or refreshed.
-- Customer identifiers, names, contact details, and balances are displayed.
-
-### Test Classes
-
-1. Enable class tracking in QuickBooks if necessary:
-
-```text
-Settings > Account and settings > Advanced > Categories > Track classes
-```
-
-2. Add classes through the QuickBooks Classes list.
-3. Click **Classes → Sync**.
+Use the "More QuickBooks data" dropdown.
 
 Expected result:
 
-- The `Classes` worksheet is created or refreshed.
-- QuickBooks class names are displayed.
+- A dedicated worksheet is created for the selected dataset
 
-### Test More QuickBooks Data
+### 5. Generate journal-entry workspace
 
-1. Open the **More QuickBooks Data** selector.
-2. Select a dataset.
-3. Click **Import table**.
-
-Example:
-
-```text
-Products & Services
-```
-
-Expected worksheet:
-
-```text
-Products_Services
-```
-
-Another example:
-
-```text
-Customer Payments
-```
-
-Expected worksheet:
-
-```text
-Customer_Payments
-```
-
-If QuickBooks returns no records, the add-in creates a worksheet containing only the column headers. This is a valid empty result.
-
-### Test Journal Entry Template
-
-1. Click **Create template**.
-2. Open the `JE_Template` worksheet.
-
-Expected columns:
-
-```text
-Line #
-Account
-Vendor
-Class
-Description
-Debit
-Credit
-Date
-```
-
-### Test Journal Entry Validation
-
-Enter a balanced example:
-
-| Line # | Account | Vendor | Class | Description | Debit | Credit | Date |
-|---|---|---|---|---|---:|---:|---|
-| 1 | Rent Expense | Sample Vendor | Operations | Rent expense | 500 | 0 | 6/23/2026 |
-| 2 | Checking | Sample Vendor | Operations | Cash payment | 0 | 500 | 6/23/2026 |
-
-Click **Validate Entry**.
+Click the journal-entry workspace/template button.
 
 Expected result:
 
+- `JE_Template` worksheet is created
+- Account/Vendor/Class dropdowns are available
+- Helper sync data should not clutter the workbook unnecessarily
+
+### 6. Prepare a balanced journal entry
+
+Example test:
+
 ```text
-Validation passed.
-Total Debits = Total Credits = $500.00
+Line 1: Account = Rent or Lease, Debit = 500
+Line 2: Account = Checking, Credit = 500
 ```
 
-### Test Demo Submission
+Use account names that exist in the connected QuickBooks sandbox company.
 
-1. Complete successful validation.
-2. Click **Submit demo journal**.
+### 7. Validate
+
+Run the control review / validation step.
 
 Expected result:
 
-```text
-Submitted successfully.
-Ref: DEMO-JE-XXXXXXXX
-```
+- Entry passes if balanced and all required fields exist
+- Clear error appears if something is missing or invalid
 
-No journal entry is posted to QuickBooks during this demonstration workflow.
+### 8. Post to QuickBooks sandbox
 
----
+Post the validated journal entry.
 
-## QuickBooks Sandbox Data
+Expected result:
 
-QuickBooks sandbox companies contain fictional sample records for development.
-
-Imported data may include:
-
-- Intuit-provided sample records
-- Records created manually in the sandbox
-- Legacy Accounting API records
-
-Some records returned by the QuickBooks API may not be visible in the newest QuickBooks web-interface screens. This can occur when Intuit retains legacy sandbox records in the Accounting API while the modern UI uses a newer feature or workflow.
-
-FinAccruals does not generate these imported records. It displays records returned by the connected QuickBooks API.
-
----
-
-## Security
-
-- QuickBooks Client Secrets remain on the backend.
-- OAuth access tokens are never sent to frontend JavaScript.
-- OAuth state validation protects the callback workflow.
-- Session data is encrypted.
-- Session cookies are HTTP-only and Secure.
-- OAuth tokens and secrets are excluded from Git.
-- The current integration uses sandbox credentials.
-- Real businesses must explicitly authorize production access.
-- Production rollout will require stronger multi-user token storage and compliance controls.
-
----
+- Success message appears
+- QuickBooks returns a journal entry ID/reference
+- Entry can be found in QuickBooks sandbox reports/search
 
 ## Known Limitations
 
-- QuickBooks does not provide one endpoint that lists every available table.
-- Supported datasets must be configured in FinAccruals.
-- The More Data menu is not yet dynamically filtered by company capability.
-- QuickBooks API records may not always match the newest QuickBooks UI.
-- Transaction imports currently include summary-level fields.
-- Transaction line details are not yet imported into separate worksheets.
-- QuickBooks queries currently request up to 1,000 records.
-- Large-company pagination is not yet implemented.
-- Journal entries are not yet posted to QuickBooks.
-- Submission history is not persisted in a database.
-- OAuth sessions are cookie-based and not yet designed for enterprise multi-user storage.
-- Xero is not yet connected.
+This is an MVP, not a complete enterprise release.
 
----
+Current limitations:
 
-## What Is Not Completed Yet
+- QuickBooks sandbox only
+- Xero integration is not implemented yet
+- No standalone FinAccruals user account system yet
+- No enterprise database for multi-user token/session storage
+- No production QuickBooks approval yet
+- No Microsoft AppSource marketplace submission yet
+- No formal subscription or billing module
+- Audit logging is basic and not enterprise-grade
+- Hosting is currently on Vercel and may need organization ownership
+- Intuit Developer app ownership may need to move to the organization
 
-- Real journal-entry posting to QuickBooks.
-- Transaction line-detail imports.
-- Pagination beyond 1,000 records.
-- Date and status filters for transaction imports.
-- Dynamic detection of supported QuickBooks datasets.
-- QuickBooks financial reports such as Trial Balance and General Ledger.
-- Persistent database storage.
-- Persistent submission history.
-- User authentication.
-- Role-based access control.
-- Multi-company and multi-tenant support.
-- Approval workflows.
-- Audit logging.
-- Operational monitoring.
-- Production QuickBooks compliance.
-- Xero OAuth and API integration.
+## Project Charter Alignment
 
----
+The project charter requested:
 
-## Next Steps
+- Excel add-in
+- Accounting platform connection
+- Master-data pull
+- Journal-entry template
+- Journal-entry validation
+- Journal-entry posting
+- Success/failure status
+- Backend/API infrastructure
 
-1. Add transaction-line worksheets for Invoices, Bills, Purchases, and Journal Entries.
-2. Add import filters for date range, status, and active/inactive records.
-3. Add pagination for companies with more than 1,000 records.
-4. Add a QuickBooks reports section.
-5. Import Trial Balance, General Ledger, Profit and Loss, and Balance Sheet reports.
-6. Add a centralized sync log.
-7. Add persistent storage for submission and synchronization history.
-8. Add real journal-entry posting to the QuickBooks sandbox.
-9. Add user authentication and tenant isolation.
-10. Add role-based approvals and audit logs.
-11. Prepare the application for production QuickBooks review.
-12. Add Xero as a separate integration.
-
----
-
-## Summary
-
-FinAccruals now includes a working Excel Add-in, an enterprise-style LedgerFlow task pane, real QuickBooks OAuth 2.0 authorization, secure sandbox connectivity, primary master-data synchronization, additional QuickBooks table imports, automatic Excel worksheet generation, journal-entry template creation, journal validation, demonstration submission workflows, and Vercel deployment.
-
-The current phase proves the full connection:
+The current MVP satisfies the core QuickBooks sandbox workflow:
 
 ```text
-QuickBooks Sandbox
-        |
-        v
-QuickBooks Accounting API
-        |
-        v
-Vercel Backend
-        |
-        v
-Office.js Task Pane
-        |
-        v
-Excel Worksheets
+Excel -> Add-in -> QuickBooks OAuth -> Pull data -> Prepare JE -> Validate -> Post to QuickBooks sandbox
 ```
 
-The next phase will focus on deeper transaction detail, financial reports, persistence, journal posting, and enterprise controls.
+Not yet complete from the full 30-day application scope:
 
----
+- Xero integration
+- Production QuickBooks workflow
+- Full app-level user authentication
+- Enterprise audit logging
+- Subscription/access-control foundation
+- Formal QA report
+- Full deployment and handoff documentation
+- Marketplace readiness
+
+## Recommended Next Steps
+
+1. Finish team testing on the same QuickBooks sandbox company.
+2. Confirm the final product name: `FinAccruals` or `LedgerFlow`.
+3. Move GitHub, Vercel, and Intuit Developer ownership to organization-managed accounts.
+4. Create a formal QA checklist/report.
+5. Decide whether to keep Vercel or move APIs to an organization-approved backend.
+6. Add durable database/session storage if multiple real users will use the app.
+7. Begin Xero integration only after QuickBooks MVP is stable.
+8. Prepare production QuickBooks review and marketplace strategy if required.
+
+## Security Notes
+
+- Never commit QuickBooks client secrets.
+- Never commit `.env` files.
+- Keep OAuth token handling server-side.
+- Use HTTPS redirect URIs.
+- Rotate secrets if they were ever exposed.
+- Use sandbox companies for testing.
+- Do not connect real client/company data until production security and ownership are approved.
+
+## Repository Structure
+
+```text
+FinAccruals/
+├── api/
+│   ├── qbo/
+│   │   ├── start.js
+│   │   ├── callback.js
+│   │   ├── status.js
+│   │   └── disconnect.js
+│   ├── accounts.js
+│   ├── vendors.js
+│   ├── customers.js
+│   ├── classes.js
+│   ├── more-data.js
+│   ├── journal-entries.js
+│   ├── history.js
+│   └── health.js
+├── assets/
+├── server/
+│   ├── qbo.js
+│   └── session.js
+├── src/
+│   ├── commands/
+│   └── taskpane/
+│       ├── taskpane.html
+│       ├── taskpane.css
+│       └── taskpane.js
+├── manifest.xml
+├── package.json
+├── package-lock.json
+├── webpack.config.js
+└── README.md
+```
 
 ## License
 
-This project currently uses the MIT license inherited from the original Microsoft Office Add-in scaffold.
+This project is currently an MVP/prototype repository. Confirm final licensing and ownership with the organization before production release.
