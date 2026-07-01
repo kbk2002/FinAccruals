@@ -967,7 +967,9 @@ async function readJELinesFromSheet() {
 
       const [lineNo, account, vendor, className, description, debit, credit, date] = row;
 
-      if (!account && !vendor && !className && !description && !debit && !credit && !date) {
+      const hasLineInput = Boolean(account || vendor || className || description || debit || credit);
+
+      if (!hasLineInput) {
         continue;
       }
 
