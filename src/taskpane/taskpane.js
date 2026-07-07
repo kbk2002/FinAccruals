@@ -121,6 +121,8 @@ function applyConnectionState(connected, companyName = "") {
     button.classList.add("is-connected");
     button.setAttribute("aria-pressed", "true");
     action.textContent = "Disconnect";
+    const generateBtn = document.getElementById("btnCreateTemplate");
+    if (generateBtn) generateBtn.disabled = false;
     setConnectionDependentActions(true);
     updateSubmitAvailability();
     setAuthBadge("Connected", "primary", companyName);
