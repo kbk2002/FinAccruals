@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -179,7 +179,7 @@
           </p>
 
           <div id="dataLockNotice" class="lock-notice" role="note">
-            <span class="lock-notice-icon">🔒</span>
+            <span class="lock-notice-icon">ðŸ”’</span>
             <span>
               Connect QuickBooks first to unlock data imports for this workbook.
             </span>
@@ -313,17 +313,34 @@
             <div class="surface-heading surface-heading--row">
               <div>
                 <h2>Pre-posting controls</h2>
-                <p>Current MVP control set.</p>
+                <p>Required JE fields are checked before the entry can be posted.</p>
               </div>
-              <span class="control-count">2 checks</span>
+              <span class="control-count">4 checks</span>
+            </div>
+            <div class="required-fields-card" aria-label="Required journal entry fields">
+              <strong>Required fields</strong>
+              <div>
+                <span>Journal date</span>
+                <span>Account</span>
+                <span>Debit or Credit</span>
+              </div>
+              <small>Vendor, Class, Description, Memo, and Prepared by are optional for the MVP.</small>
             </div>
             <div class="control-list">
               <div class="control-row">
                 <span class="control-status">01</span>
-                <span><strong>Population check</strong><small>At least one journal line is present</small></span>
+                <span><strong>Required field check</strong><small>At least one line, account, and journal date are present</small></span>
               </div>
               <div class="control-row">
                 <span class="control-status">02</span>
+                <span><strong>Amount check</strong><small>Each row uses either Debit or Credit, not both</small></span>
+              </div>
+              <div class="control-row">
+                <span class="control-status">03</span>
+                <span><strong>Date check</strong><small>Each populated line inherits the required journal date</small></span>
+              </div>
+              <div class="control-row">
+                <span class="control-status">04</span>
                 <span><strong>Balance check</strong><small>Total debits equal total credits within $0.01</small></span>
               </div>
             </div>
@@ -333,7 +350,7 @@
           </article>
 
           <div id="validationResult" class="validation-result" aria-live="polite">
-            <span class="result-marker">—</span>
+            <span class="result-marker">-</span>
             <span>Validation has not been run.</span>
           </div>
         </section>
@@ -374,7 +391,7 @@
             </div>
             <div id="historyList" class="history-list">
               <div class="empty-state">
-                <span class="empty-state-icon">↻</span>
+                <span class="empty-state-icon">â†»</span>
                 <span>Refresh to load submission history.</span>
               </div>
             </div>

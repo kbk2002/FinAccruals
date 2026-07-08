@@ -1,4 +1,4 @@
-/* global Office, Excel, document, fetch, console, window, setInterval, clearInterval */
+﻿/* global Office, Excel, URLSearchParams, document, fetch, console, window, setInterval, clearInterval */
 
 const API_BASE = "https://fin-accruals.vercel.app/api";
 let isQboConnected = false;
@@ -540,7 +540,7 @@ async function handleCreateTemplate() {
         "Description",
         "Debit *",
         "Credit *",
-        "Date",
+        "Date *",
       ];
 
       const titleRange = sheet.getRange("A1:H1");
@@ -605,7 +605,7 @@ async function handleCreateTemplate() {
       sheet.getRange("D5:E5").merge(false);
       sheet.getRange("A6:E6").values = [
         [
-          "Tip: choose Account, Vendor, and Class from dropdowns. Enter either Debit or Credit on each row, not both.",
+          "Required: Journal date, Account, and either Debit or Credit on each populated row. Vendor, Class, Description, Memo, and Prepared by are optional.",
           "",
           "",
           "",
@@ -615,6 +615,7 @@ async function handleCreateTemplate() {
       sheet.getRange("A6:E6").merge(false);
       sheet.getRange("A4:A5").format.font.bold = true;
       sheet.getRange("C4:C5").format.font.bold = true;
+      sheet.getRange("A4").format.font.color = "#b91c1c";
       sheet.getRange("A4:A5").format.wrapText = false;
       sheet.getRange("C4:C5").format.wrapText = false;
       sheet.getRange("B4").numberFormat = [["yyyy-mm-dd"]];
@@ -625,17 +626,29 @@ async function handleCreateTemplate() {
       sheet.getRange("A6:E6").format.font.color = "#64748b";
 
       const totalsRange = sheet.getRange("F4:H6");
-      totalsRange.values = [["Total debit", "Total credit", "Difference"], ["", "", ""], ["Status", "", ""]];
+      totalsRange.values = [
+        ["Total debit", "Total credit", "Difference"],
+        ["", "", ""],
+        ["Status", "", ""],
+      ];
       totalsRange.format.fill.color = "#f8fafc";
       totalsRange.format.wrapText = true;
       sheet.getRange("F4:H4").format.font.bold = true;
-      sheet.getRange("F5").formulas = [[`=SUM(F${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:F${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
-      sheet.getRange("G5").formulas = [[`=SUM(G${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:G${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`]];
+      sheet.getRange("F5").formulas = [
+        [
+          `=SUM(F${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:F${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`,
+        ],
+      ];
+      sheet.getRange("G5").formulas = [
+        [
+          `=SUM(G${JE_TEMPLATE_DATA_START_ROW_INDEX + 1}:G${JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES})`,
+        ],
+      ];
       sheet.getRange("H5").formulas = [["=F5-G5"]];
       sheet.getRange("F5:H5").numberFormat = [["$#,##0.00", "$#,##0.00", "$#,##0.00"]];
       sheet.getRange("G6:H6").merge(false);
       sheet.getRange("F6").format.font.bold = true;
-      sheet.getRange("G6").formulas = [["=IF(ABS(H5)<0.01,\"Balanced\",\"Needs review\")"]];
+      sheet.getRange("G6").formulas = [['=IF(ABS(H5)<0.01,"Balanced","Needs review")']];
       sheet.getRange("G6").format.font.bold = true;
 
       const sectionRange = sheet.getRange("A7:H7");
@@ -654,6 +667,8 @@ async function handleCreateTemplate() {
       headerRange.format.font.bold = true;
       headerRange.format.fill.color = "#dbeafe";
       headerRange.format.font.color = "#0f172a";
+      sheet.getRange("B8").format.font.color = "#b91c1c";
+      sheet.getRange("F8:H8").format.font.color = "#b91c1c";
 
       const dataRange = sheet.getRangeByIndexes(
         JE_TEMPLATE_DATA_START_ROW_INDEX,
@@ -767,7 +782,12 @@ async function handleCreateTemplate() {
       amountRange.format.fill.color = "#fff7ed";
       dateRange.format.fill.color = "#f8fafc";
 
-      const templateRange = sheet.getRangeByIndexes(0, 0, JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES, JE_TEMPLATE_COLUMN_COUNT);
+      const templateRange = sheet.getRangeByIndexes(
+        0,
+        0,
+        JE_TEMPLATE_DATA_START_ROW_INDEX + JE_TEMPLATE_MAX_LINES,
+        JE_TEMPLATE_COLUMN_COUNT
+      );
       const existingName = context.workbook.names.getItemOrNullObject("JE_TABLE");
       existingName.load("name");
 
@@ -829,11 +849,139 @@ async function handleCreateTemplate() {
 
 /* 4. Validate JE */
 
+function renderValidationResult(state, title, messages = []) {
+  const resultEl = document.getElementById("validationResult");
+  resultEl.className = `validation-result${state ? ` validation-result--${state}` : ""}`;
+  resultEl.replaceChildren();
+
+  const marker = document.createElement("span");
+  marker.className = "result-marker";
+  marker.textContent = state === "ok" ? "OK" : state === "error" ? "!" : "-";
+
+  const copy = document.createElement("span");
+  copy.className = "validation-copy";
+
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  copy.appendChild(heading);
+
+  if (messages.length) {
+    const list = document.createElement("ul");
+    messages.slice(0, 5).forEach((message) => {
+      const item = document.createElement("li");
+      item.textContent = message;
+      list.appendChild(item);
+    });
+
+    if (messages.length > 5) {
+      const item = document.createElement("li");
+      item.textContent = `${messages.length - 5} more issue(s). Fix the first items and run validation again.`;
+      list.appendChild(item);
+    }
+
+    copy.appendChild(list);
+  }
+
+  resultEl.append(marker, copy);
+}
+
+function validationColumnsForError(message) {
+  const lower = message.toLowerCase();
+
+  if (lower.includes("account")) return [1];
+  if (lower.includes("date")) return [7];
+  if (
+    lower.includes("debit") ||
+    lower.includes("credit") ||
+    lower.includes("amount") ||
+    lower.includes("negative")
+  ) {
+    return [5, 6];
+  }
+
+  return [];
+}
+
+async function markJEValidationIssues(errors = [], lines = []) {
+  return Excel.run(async (context) => {
+    const sheet = context.workbook.worksheets.getItem("JE_Template");
+
+    const dataRange = sheet.getRangeByIndexes(
+      JE_TEMPLATE_DATA_START_ROW_INDEX,
+      0,
+      JE_TEMPLATE_MAX_LINES,
+      JE_TEMPLATE_COLUMN_COUNT
+    );
+    dataRange.format.fill.color = "#ffffff";
+
+    sheet.getRangeByIndexes(
+      JE_TEMPLATE_DATA_START_ROW_INDEX,
+      0,
+      JE_TEMPLATE_MAX_LINES,
+      1
+    ).format.fill.color = "#f8fafc";
+    sheet.getRangeByIndexes(
+      JE_TEMPLATE_DATA_START_ROW_INDEX,
+      1,
+      JE_TEMPLATE_MAX_LINES,
+      3
+    ).format.fill.color = "#eff6ff";
+    sheet.getRangeByIndexes(
+      JE_TEMPLATE_DATA_START_ROW_INDEX,
+      5,
+      JE_TEMPLATE_MAX_LINES,
+      2
+    ).format.fill.color = "#fff7ed";
+    sheet.getRangeByIndexes(
+      JE_TEMPLATE_DATA_START_ROW_INDEX,
+      7,
+      JE_TEMPLATE_MAX_LINES,
+      1
+    ).format.fill.color = "#f8fafc";
+
+    const populatedRowIndexes = new Set(
+      lines
+        .map((line) => Number(line.rowNumber) - 1)
+        .filter(
+          (rowIndex) => Number.isInteger(rowIndex) && rowIndex >= JE_TEMPLATE_DATA_START_ROW_INDEX
+        )
+    );
+
+    errors.forEach((message) => {
+      const rowMatch = message.match(/Row\s+(\d+)/i);
+      const rowIndex = rowMatch ? Number(rowMatch[1]) - 1 : null;
+      const columns = validationColumnsForError(message);
+
+      if (Number.isInteger(rowIndex) && rowIndex >= JE_TEMPLATE_DATA_START_ROW_INDEX) {
+        if (!columns.length) {
+          sheet.getRangeByIndexes(rowIndex, 0, 1, JE_TEMPLATE_COLUMN_COUNT).format.fill.color =
+            "#fee2e2";
+          return;
+        }
+
+        columns.forEach((columnIndex) => {
+          sheet.getRangeByIndexes(rowIndex, columnIndex, 1, 1).format.fill.color = "#fecaca";
+        });
+      }
+    });
+
+    const hasBalanceError = errors.some((message) => message.toLowerCase().includes("unbalanced"));
+    if (hasBalanceError) {
+      populatedRowIndexes.forEach((rowIndex) => {
+        sheet.getRangeByIndexes(rowIndex, 5, 1, 2).format.fill.color = "#fed7aa";
+      });
+      sheet.getRange("F5:H6").format.fill.color = "#ffedd5";
+    } else {
+      sheet.getRange("F4:H6").format.fill.color = "#f8fafc";
+    }
+
+    await context.sync();
+  });
+}
+
 async function handleValidateJE() {
   try {
-    const resultEl = document.getElementById("validationResult");
-    resultEl.textContent = "Validating entry...";
-    resultEl.className = "validation-result";
+    renderValidationResult("", "Validating entry...");
     validationPassed = false;
     updateSubmitAvailability();
 
@@ -841,29 +989,33 @@ async function handleValidateJE() {
     const validation = validateJELines(lines);
 
     if (!validation.valid) {
-      resultEl.textContent = validation.errors.join(" ");
-      resultEl.classList.add("validation-result--error");
+      await markJEValidationIssues(validation.errors, lines);
+      renderValidationResult(
+        "error",
+        "Validation failed. Fix the highlighted fields.",
+        validation.errors
+      );
       setStatus("Validation failed. Review the journal entry.", "error");
       return;
     }
 
+    await markJEValidationIssues([], lines);
     validationPassed = true;
     updateSubmitAvailability();
-    resultEl.textContent = `All controls passed. ${lines.length} line(s), total debits and credits ${formatCurrency(
-      validation.totalDebit
-    )}.`;
-    resultEl.classList.add("validation-result--ok");
+    renderValidationResult("ok", "All controls passed.", [
+      `${lines.length} line(s) ready to post.`,
+      `Total debits and credits: ${formatCurrency(validation.totalDebit)}.`,
+    ]);
     setStatus("Validation passed. Ready to submit.", "success");
   } catch (err) {
     validationPassed = false;
     updateSubmitAvailability();
     console.error(err);
-    const resultEl = document.getElementById("validationResult");
-    resultEl.textContent =
+    const message =
       err.code === "ItemNotFound"
         ? "Create the JE_Template sheet before running validation."
         : `Validation failed: ${err.message}`;
-    resultEl.className = "validation-result validation-result--error";
+    renderValidationResult("error", message);
     setStatus("Error validating JE.", "error");
   }
 }
@@ -879,10 +1031,41 @@ function parseAmount(value) {
   return Number.isFinite(amount) ? amount : null;
 }
 
+function hasMoreThanTwoDecimals(amount) {
+  return Math.abs(amount * 100 - Math.round(amount * 100)) > 0.0000001;
+}
+
+function parseJEDateValue(value) {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    const excelEpoch = Date.UTC(1899, 11, 30);
+    const date = new Date(excelEpoch + value * 24 * 60 * 60 * 1000);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString().slice(0, 10);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const parsed = new Date(trimmed);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString().slice(0, 10);
+  }
+
+  return null;
+}
+
 function validateJELines(lines) {
   const errors = [];
   let totalDebit = 0;
   let totalCredit = 0;
+  const entryDates = new Set();
 
   if (lines.length === 0) {
     return {
@@ -897,6 +1080,7 @@ function validateJELines(lines) {
     const rowNumber = line.rowNumber || index + JE_TEMPLATE_DATA_START_ROW_INDEX + 1;
     const debit = parseAmount(line.debit);
     const credit = parseAmount(line.credit);
+    const parsedDate = parseJEDateValue(line.date);
 
     if (!line.account) {
       errors.push(`Row ${rowNumber}: account is required.`);
@@ -904,6 +1088,10 @@ function validateJELines(lines) {
 
     if (!line.date) {
       errors.push(`Row ${rowNumber}: date is required.`);
+    } else if (!parsedDate) {
+      errors.push(`Row ${rowNumber}: date must be a valid date.`);
+    } else {
+      entryDates.add(parsedDate);
     }
 
     if (debit === null || credit === null) {
@@ -913,6 +1101,10 @@ function validateJELines(lines) {
 
     if (debit < 0 || credit < 0) {
       errors.push(`Row ${rowNumber}: negative amounts are not allowed.`);
+    }
+
+    if (hasMoreThanTwoDecimals(debit) || hasMoreThanTwoDecimals(credit)) {
+      errors.push(`Row ${rowNumber}: debit and credit can only use 2 decimal places.`);
     }
 
     if ((debit > 0 && credit > 0) || (debit === 0 && credit === 0)) {
@@ -925,6 +1117,10 @@ function validateJELines(lines) {
 
   if (totalDebit <= 0 && totalCredit <= 0) {
     errors.push("Journal total must be greater than zero.");
+  }
+
+  if (entryDates.size > 1) {
+    errors.push("All journal lines must use the same date.");
   }
 
   if (Math.abs(totalDebit - totalCredit) > 0.01) {
@@ -969,7 +1165,9 @@ async function readJELinesFromSheet() {
 
       const [lineNo, account, vendor, className, description, debit, credit, date] = row;
 
-      const hasLineInput = Boolean(account || vendor || className || description || debit || credit);
+      const hasLineInput = Boolean(
+        account || vendor || className || description || debit || credit
+      );
 
       if (!hasLineInput) {
         continue;
@@ -1014,9 +1212,12 @@ async function handleSubmitJE() {
     if (!validation.valid) {
       validationPassed = false;
       updateSubmitAvailability();
-      const resultEl = document.getElementById("validationResult");
-      resultEl.textContent = validation.errors.join(" ");
-      resultEl.className = "validation-result validation-result--error";
+      await markJEValidationIssues(validation.errors, lines);
+      renderValidationResult(
+        "error",
+        "Journal changed after validation. Fix the highlighted fields.",
+        validation.errors
+      );
       setStatus("Journal changed after validation. Run validation again.", "error");
       return;
     }
@@ -1053,9 +1254,10 @@ async function handleSubmitJE() {
 
     setStatus("Journal entry posted to QuickBooks sandbox.", "success");
 
-    const resultEl = document.getElementById("validationResult");
-    resultEl.textContent = `Posted successfully. QuickBooks Journal Entry ID: ${payload.id || "created"}`;
-    resultEl.className = "validation-result validation-result--ok";
+    renderValidationResult("ok", "Posted successfully.", [
+      `QuickBooks Journal Entry ID: ${payload.id || "created"}.`,
+      `Amount posted: ${formatCurrency(submission.amount)}.`,
+    ]);
     validationPassed = false;
     updateSubmitAvailability();
   } catch (err) {
@@ -1067,9 +1269,7 @@ async function handleSubmitJE() {
 
     setStatus(friendlyMessage, "error");
 
-    const resultEl = document.getElementById("validationResult");
-    resultEl.textContent = `Submission failed: ${friendlyMessage}`;
-    resultEl.className = "validation-result validation-result--error";
+    renderValidationResult("error", "Submission failed.", [friendlyMessage]);
   }
 }
 
