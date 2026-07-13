@@ -216,13 +216,16 @@ function findOptional(lookup, value, label, rowNumber) {
 }
 
 async function loadReferenceLookups(session) {
-  const [accountResult, vendorResult, classResult] = await Promise.allSettled([
-    qboQuery(session, "select * from Account where Active = true maxresults 1000"),
+  // Accounts are required — propagate QBO errors so the handler can return 502
+  const accountResult = await qboQuery(session, "select * from Account where Active = true maxresults 1000");
+  const accounts = accountResult.Account || [];
+
+  // Vendors and classes are optional — allow partial QBO failures
+  const [vendorResult, classResult] = await Promise.allSettled([
     qboQuery(session, "select * from Vendor where Active = true maxresults 1000"),
     qboQuery(session, "select * from Class where Active = true maxresults 1000"),
   ]);
 
-  const accounts = accountResult.status === "fulfilled" ? accountResult.value.Account || [] : [];
   const vendors = vendorResult.status === "fulfilled" ? vendorResult.value.Vendor || [] : [];
   const classes = classResult.status === "fulfilled" ? classResult.value.Class || [] : [];
 
@@ -323,18 +326,38 @@ export default async function handler(req, res) {
       });
     }
 
-    const lookups = await loadReferenceLookups(session);
-    const payload = buildJournalEntryPayload(validation, lookups);
-    const journalEntry = await qboCreate(session, "JournalEntry", payload);
+    // 502 if QBO account lookup fails (network / auth issue)
+    let lookups;
+    try {
+      lookups = await loadReferenceLookups(session);
+    } catch (err) {
+      return res.status(502).json({ error: `Failed to load accounts from QuickBooks: ${err.message}` });
+    }
+
+    // 400 if an account, vendor, or class name isn't found in QBO
+    let payload;
+    try {
+      payload = buildJournalEntryPayload(validation, lookups);
+    } catch (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    // 502 if the QBO create call itself fails
+    let journalEntry;
+    try {
+      journalEntry = await qboCreate(session, "JournalEntry", payload);
+    } catch (err) {
+      return res.status(502).json({ error: err.message });
+    }
 
     return res.status(200).json({
       success: true,
       id: journalEntry.Id,
       docNumber: journalEntry.DocNumber || "",
       date: journalEntry.TxnDate || payload.TxnDate,
-      amount: journalEntry.TotalAmt || payload.Line.reduce((sum, line) => sum + line.Amount, 0) / 2,
+      amount: journalEntry.TotalAmt || validation.totalDebit,
     });
   } catch (error) {
-    return res.status(400).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
