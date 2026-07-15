@@ -1,4 +1,45 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables & secrets (QBO client id/secret, session secret, etc.)
 .env
+.env.local
+.env.*.local
+.env.development
+.env.production
+# ...but keep a committed template if you add one
+!.env.example
+
+# Vercel (created by `vercel dev` / `vercel link`)
+.vercel
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Caches
+.eslintcache
+.cache/
+
+# Test / coverage output
+coverage/
+
+# OS files
 .DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editor scratch files
+# (note: .vscode/ is intentionally tracked in this repo — do not ignore it)
+*.swp
+*.swo
+*~
+.idea/
