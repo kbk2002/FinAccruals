@@ -1,6 +1,10 @@
 ﻿/* global Office, Excel, URLSearchParams, document, fetch, console, window, setInterval, clearInterval */
 
 const API_BASE = "https://fin-accruals.vercel.app/api";
+const BACKEND_UNAVAILABLE_MESSAGE =
+  "FinAccruals backend is unavailable right now. Please wait a moment and try again.";
+const QBO_UNAVAILABLE_MESSAGE =
+  "QuickBooks is unavailable or the saved connection needs refresh. Reconnect QuickBooks and try again.";
 let isQboConnected = false;
 let validationPassed = false;
 const demoSubmissionHistory = [];
@@ -139,14 +143,48 @@ function applyConnectionState(connected, companyName = "") {
 }
 
 async function apiFetch(path, options = {}) {
-  return fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: "include",
-    headers: {
-      Accept: "application/json",
-      ...(options.headers || {}),
-    },
-  });
+  try {
+    return await fetch(`${API_BASE}${path}`, {
+      ...options,
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(options.headers || {}),
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    throw new Error(BACKEND_UNAVAILABLE_MESSAGE);
+  }
+}
+
+async function readApiPayload(response) {
+  return response.json().catch(() => ({}));
+}
+
+function createApiError(response, payload = {}, fallbackMessage = "Request failed.") {
+  let message = payload.error || payload.message || fallbackMessage;
+
+  if (response.status === 401) {
+    message = "Connect QuickBooks first, then try again.";
+  } else if (response.status === 502) {
+    message = payload.error
+      ? `${QBO_UNAVAILABLE_MESSAGE} Details: ${payload.error}`
+      : QBO_UNAVAILABLE_MESSAGE;
+  } else if (response.status >= 500) {
+    message = BACKEND_UNAVAILABLE_MESSAGE;
+  }
+
+  const error = new Error(message);
+  error.status = response.status;
+  error.payload = payload;
+  return error;
+}
+
+function throwIfApiFailed(response, payload, fallbackMessage) {
+  if (response.ok) return;
+  if (response.status === 401) applyConnectionState(false);
+  throw createApiError(response, payload, fallbackMessage);
 }
 
 async function refreshQboStatus(showMessage = false) {
@@ -232,7 +270,8 @@ async function handleConnectQBO() {
     if (isQboConnected) {
       setStatus("Disconnecting QuickBooks...", "info");
       const response = await apiFetch("/qbo/disconnect", { method: "POST" });
-      if (!response.ok) throw new Error("Unable to disconnect QuickBooks.");
+      const payload = await readApiPayload(response);
+      throwIfApiFailed(response, payload, "Unable to disconnect QuickBooks.");
       applyConnectionState(false);
       setStatus("QuickBooks disconnected.", "info");
       return;
@@ -271,17 +310,10 @@ function getMasterDataFromPayload(kind, payload) {
 async function fetchMasterData(kind) {
   const label = MASTER_DATA_LABELS[kind] || kind;
   const res = await apiFetch(`/${kind}`);
+  const payload = await readApiPayload(res);
 
-  if (!res.ok) {
-    const errorPayload = await res.json().catch(() => ({}));
-    if (res.status === 401) {
-      applyConnectionState(false);
-      throw new Error("Connect QuickBooks first, then try syncing again.");
-    }
-    throw new Error(errorPayload.error || `Failed to pull ${label.toLowerCase()}`);
-  }
+  throwIfApiFailed(res, payload, `Failed to pull ${label.toLowerCase()}.`);
 
-  const payload = await res.json();
   return getMasterDataFromPayload(kind, payload);
 }
 
@@ -420,15 +452,9 @@ async function handleImportMoreData() {
     if (TRANSACTION_DATASETS.has(dataset)) query.set("dateRange", dateRange);
 
     const response = await apiFetch(`/more-data?${query.toString()}`);
-    const payload = await response.json();
+    const payload = await readApiPayload(response);
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        applyConnectionState(false);
-        throw new Error("Connect QuickBooks first, then try importing again.");
-      }
-      throw new Error(payload.error || "Unable to import the selected QuickBooks table.");
-    }
+    throwIfApiFailed(response, payload, "Unable to import the selected QuickBooks table.");
 
     await writeTableToSheet(payload.sheetName, payload.headers, payload.rows);
     result.textContent = `${payload.label}: ${payload.count} record(s) imported to ${
@@ -1231,16 +1257,9 @@ async function handleSubmitJE() {
       },
       body: JSON.stringify({ lines }),
     });
-    const payload = await response.json().catch(() => ({}));
+    const payload = await readApiPayload(response);
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        applyConnectionState(false);
-        throw new Error("Connect QuickBooks first, then try posting again.");
-      }
-      const detail = payload.error || payload.message || "QuickBooks sandbox posting failed.";
-      throw new Error(detail);
-    }
+    throwIfApiFailed(response, payload, "QuickBooks sandbox posting failed.");
 
     const submission = {
       id: payload.id ? `QBO-JE-${payload.id}` : `QBO-JE-${Date.now()}`,
@@ -1279,13 +1298,10 @@ async function handleLoadHistory() {
   try {
     setStatus("Loading submission history...", "info");
 
-    const res = await fetch(`${API_BASE}/history`);
+    const res = await apiFetch("/history");
+    const payload = await readApiPayload(res);
 
-    if (!res.ok) {
-      throw new Error("Failed to load history");
-    }
-
-    const payload = await res.json();
+    throwIfApiFailed(res, payload, "Failed to load history.");
     const items = [...demoSubmissionHistory, ...(payload.history || [])];
 
     if (!items.length) {
