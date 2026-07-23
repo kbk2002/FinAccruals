@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 
     const session = await exchangeCode(String(code), String(realmId));
     session.companyName = await loadCompanyName(session);
-    await writeSession(res, session);
+    writeSession(res, session);
     return res.status(200).send(callbackPage(true, session.companyName || "QuickBooks"));
   } catch (error) {
     return res.status(500).send(callbackPage(false, error.message));

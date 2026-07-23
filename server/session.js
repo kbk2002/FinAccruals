@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { getQboSession, upsertQboSession, deleteQboSession } from "./supabase.js";
 
 const SESSION_COOKIE = "finaccruals_qbo_session";
 const STATE_COOKIE = "finaccruals_qbo_state";
@@ -44,7 +43,7 @@ function appendCookie(res, cookie) {
   res.setHeader("Set-Cookie", [...cookies, cookie]);
 }
 
-function encryptPayload(payload) {
+function encrypt(payload) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", secretKey(), iv);
   const encrypted = Buffer.concat([
@@ -55,7 +54,7 @@ function encryptPayload(payload) {
   return Buffer.concat([iv, tag, encrypted]).toString("base64url");
 }
 
-function decryptPayload(value) {
+function decrypt(value) {
   try {
     const data = Buffer.from(value, "base64url");
     const iv = data.subarray(0, 12);
@@ -71,45 +70,25 @@ function decryptPayload(value) {
 
 export function createOAuthState(res) {
   const state = crypto.randomBytes(32).toString("base64url");
-  appendCookie(res, serializeCookie(STATE_COOKIE, encryptPayload({ state }), 10 * 60));
+  appendCookie(res, serializeCookie(STATE_COOKIE, encrypt({ state }), 10 * 60));
   return state;
 }
 
 export function consumeOAuthState(req, res, receivedState) {
-  const stored = decryptPayload(parseCookies(req)[STATE_COOKIE]);
+  const stored = decrypt(parseCookies(req)[STATE_COOKIE]);
   appendCookie(res, serializeCookie(STATE_COOKIE, "", 0));
   return Boolean(stored?.state && receivedState && stored.state === receivedState);
 }
 
-export function readSessionId(req) {
-  return parseCookies(req)[SESSION_COOKIE] || null;
+export function readSession(req) {
+  const value = parseCookies(req)[SESSION_COOKIE];
+  return value ? decrypt(value) : null;
 }
 
-export async function readSession(req) {
-  const sessionId = readSessionId(req);
-  if (!sessionId) return null;
-
-  const record = await getQboSession(sessionId);
-  if (!record?.payload) return null;
-
-  const session = decryptPayload(record.payload);
-  return session ? { ...session, sessionId } : null;
+export function writeSession(res, session) {
+  appendCookie(res, serializeCookie(SESSION_COOKIE, encrypt(session), 60 * 60 * 24 * 90));
 }
 
-export async function writeSession(res, session, sessionId) {
-  const id = sessionId || session.sessionId || crypto.randomBytes(24).toString("base64url");
-  const payload = { ...session };
-  delete payload.sessionId;
-
-  await upsertQboSession(id, encryptPayload(payload));
-  appendCookie(res, serializeCookie(SESSION_COOKIE, id, 60 * 60 * 24 * 90));
-  return id;
-}
-
-export async function clearSession(res, req) {
-  const sessionId = req ? readSessionId(req) : null;
-  if (sessionId) {
-    await deleteQboSession(sessionId);
-  }
+export function clearSession(res) {
   appendCookie(res, serializeCookie(SESSION_COOKIE, "", 0));
 }

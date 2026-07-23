@@ -7,7 +7,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed." });
   }
 
-  const session = await readSession(req);
+  const session = readSession(req);
 
   try {
     await revokeSession(session);
@@ -15,6 +15,6 @@ export default async function handler(req, res) {
     // The local session must still be removed if Intuit already invalidated the token.
   }
 
-  await clearSession(res, req);
+  clearSession(res);
   return res.status(200).json({ success: true });
 }
