@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
     if (!session.companyName) {
       session.companyName = await loadCompanyName(session);
-      writeSession(res, session);
+      await writeSession(res, session, session.sessionId);
     }
 
     return res.status(200).json({

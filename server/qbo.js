@@ -76,7 +76,7 @@ export async function exchangeCode(code, realmId) {
 }
 
 export async function activeSession(req, res) {
-  let session = readSession(req);
+  let session = await readSession(req);
   if (!session?.accessToken || !session?.realmId) return null;
 
   if (session.accessTokenExpiresAt > Date.now() + 5 * 60 * 1000) {
@@ -84,7 +84,7 @@ export async function activeSession(req, res) {
   }
 
   if (!session.refreshToken || session.refreshTokenExpiresAt <= Date.now()) {
-    clearSession(res);
+    await clearSession(res, req);
     return null;
   }
 
@@ -95,12 +95,12 @@ export async function activeSession(req, res) {
       refresh_token: session.refreshToken,
     });
   } catch {
-    clearSession(res);
+    await clearSession(res, req);
     return null;
   }
 
   session = createSession(tokens, session.realmId, session);
-  writeSession(res, session);
+  await writeSession(res, session, session.sessionId);
   return session;
 }
 
