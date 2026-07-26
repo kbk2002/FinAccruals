@@ -646,6 +646,24 @@ async function handleCreateTemplate() {
       sheet.getRange("C4:C5").format.wrapText = false;
       sheet.getRange("B4").numberFormat = [["yyyy-mm-dd"]];
       sheet.getRange("B4").format.fill.color = "#fff7ed";
+      sheet.getRange("B4").dataValidation.rule = {
+        date: {
+          formula1: "2000-01-01",
+          formula2: "2099-12-31",
+          operator: Excel.DataValidationOperator.between,
+        },
+      };
+      sheet.getRange("B4").dataValidation.prompt = {
+        showPrompt: true,
+        title: "Journal date required",
+        message: "Enter the posting date in yyyy-mm-dd format.",
+      };
+      sheet.getRange("B4").dataValidation.errorAlert = {
+        showAlert: true,
+        style: Excel.DataValidationAlertStyle.stop,
+        title: "Invalid journal date",
+        message: "Use a valid date between 2000-01-01 and 2099-12-31.",
+      };
       sheet.getRange("D4:E4").format.fill.color = "#ffffff";
       sheet.getRange("B5").format.fill.color = "#ffffff";
       sheet.getRange("D5:E5").format.fill.color = "#ecfdf5";
@@ -786,6 +804,23 @@ async function handleCreateTemplate() {
         "$#,##0.00",
         "$#,##0.00",
       ]);
+      amountRange.dataValidation.rule = {
+        decimal: {
+          formula1: "0",
+          operator: Excel.DataValidationOperator.greaterThanOrEqualTo,
+        },
+      };
+      amountRange.dataValidation.prompt = {
+        showPrompt: true,
+        title: "Debit/Credit amount",
+        message: "Enter a positive amount in either Debit or Credit. Leave the other side blank.",
+      };
+      amountRange.dataValidation.errorAlert = {
+        showAlert: true,
+        style: Excel.DataValidationAlertStyle.stop,
+        title: "Invalid amount",
+        message: "Debit and Credit must be zero or a positive number.",
+      };
 
       const dateRange = sheet.getRangeByIndexes(
         JE_TEMPLATE_DATA_START_ROW_INDEX,
@@ -797,6 +832,24 @@ async function handleCreateTemplate() {
         '=IF($B$4="","",$B$4)',
       ]);
       dateRange.numberFormat = Array.from({ length: JE_TEMPLATE_MAX_LINES }, () => ["yyyy-mm-dd"]);
+      dateRange.dataValidation.rule = {
+        date: {
+          formula1: "2000-01-01",
+          formula2: "2099-12-31",
+          operator: Excel.DataValidationOperator.between,
+        },
+      };
+      dateRange.dataValidation.prompt = {
+        showPrompt: true,
+        title: "Line date",
+        message: "Defaults from Journal date. If edited, use yyyy-mm-dd.",
+      };
+      dateRange.dataValidation.errorAlert = {
+        showAlert: true,
+        style: Excel.DataValidationAlertStyle.stop,
+        title: "Invalid line date",
+        message: "Use a valid date between 2000-01-01 and 2099-12-31.",
+      };
 
       const requiredInputRange = sheet.getRangeByIndexes(
         JE_TEMPLATE_DATA_START_ROW_INDEX,
