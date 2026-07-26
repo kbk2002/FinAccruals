@@ -33,9 +33,7 @@ function callbackPage(success, message) {
 </html>`;
 }
 
-import { traceApiCall } from "../../server/logging.js";
-
-export default traceApiCall(async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
 
   try {
@@ -53,6 +51,7 @@ export default traceApiCall(async function handler(req, res) {
     session.companyName = await loadCompanyName(session);
     await saveQboConnection(session);
     writeSession(res, safeSession(session));
+
     return res.status(200).send(callbackPage(true, session.companyName || "QuickBooks"));
   } catch (error) {
     return res.status(500).send(callbackPage(false, error.message));
