@@ -1,8 +1,9 @@
+import { traceApiCall } from "../../server/logging.js";
 import { activeSession, loadCompanyName } from "../../server/qbo.js";
 import { writeSession } from "../../server/session.js";
 import { safeSession, saveQboConnection } from "../../server/supabase.js";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return res.status(405).json({ error: "Method not allowed." });
@@ -28,3 +29,5 @@ export default async function handler(req, res) {
     return res.status(200).json({ connected: false, error: error.message });
   }
 }
+
+export default traceApiCall(handler);

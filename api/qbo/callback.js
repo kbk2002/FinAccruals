@@ -33,7 +33,9 @@ function callbackPage(success, message) {
 </html>`;
 }
 
-export default async function handler(req, res) {
+import { traceApiCall } from "../../server/logging.js";
+
+export default traceApiCall(async function handler(req, res) {
   res.setHeader("Content-Type", "text/html; charset=utf-8");
 
   try {

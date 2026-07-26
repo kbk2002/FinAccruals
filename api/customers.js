@@ -1,6 +1,7 @@
+import { traceApiCall } from "../server/logging.js";
 import { activeSession, qboQuery } from "../server/qbo.js";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   try {
     const session = await activeSession(req, res);
     if (!session) return res.status(401).json({ error: "QuickBooks is not connected." });
@@ -19,3 +20,5 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: error.message });
   }
 }
+
+export default traceApiCall(handler);

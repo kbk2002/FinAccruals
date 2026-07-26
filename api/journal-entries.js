@@ -1,3 +1,4 @@
+import { traceApiCall } from "../server/logging.js";
 import { activeSession, qboCreate, qboQuery } from "../server/qbo.js";
 
 function parseJsonBody(req) {
@@ -303,7 +304,7 @@ function buildJournalEntryPayload(validation, lookups) {
   };
 }
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed." });
@@ -361,3 +362,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: error.message });
   }
 }
+export default traceApiCall(handler);
