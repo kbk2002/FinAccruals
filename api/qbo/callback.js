@@ -1,5 +1,6 @@
 import { exchangeCode, loadCompanyName } from "../../server/qbo.js";
 import { consumeOAuthState, writeSession } from "../../server/session.js";
+import { safeSession, saveQboConnection } from "../../server/supabase.js";
 
 function callbackPage(success, message) {
   const safeMessage = JSON.stringify({ source: "finaccruals-qbo", success, message });
@@ -48,7 +49,8 @@ export default async function handler(req, res) {
 
     const session = await exchangeCode(String(code), String(realmId));
     session.companyName = await loadCompanyName(session);
-    writeSession(res, session);
+    await saveQboConnection(session);
+    writeSession(res, safeSession(session));
     return res.status(200).send(callbackPage(true, session.companyName || "QuickBooks"));
   } catch (error) {
     return res.status(500).send(callbackPage(false, error.message));

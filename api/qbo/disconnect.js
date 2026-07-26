@@ -1,5 +1,6 @@
-import { revokeSession } from "../../server/qbo.js";
-import { clearSession, readSession } from "../../server/session.js";
+import { activeSession, revokeSession } from "../../server/qbo.js";
+import { clearSession } from "../../server/session.js";
+import { markQboDisconnected } from "../../server/supabase.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -7,12 +8,13 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed." });
   }
 
-  const session = readSession(req);
+  const session = await activeSession(req, res);
 
   try {
     await revokeSession(session);
+    await markQboDisconnected(session?.realmId);
   } catch {
-    // The local session must still be removed if Intuit already invalidated the token.
+    // The local session must still be removed if Intuit or Supabase already invalidated the token.
   }
 
   clearSession(res);

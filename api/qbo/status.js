@@ -1,5 +1,6 @@
 import { activeSession, loadCompanyName } from "../../server/qbo.js";
 import { writeSession } from "../../server/session.js";
+import { safeSession, saveQboConnection } from "../../server/supabase.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {
@@ -13,7 +14,8 @@ export default async function handler(req, res) {
 
     if (!session.companyName) {
       session.companyName = await loadCompanyName(session);
-      writeSession(res, session);
+      await saveQboConnection(session);
+      writeSession(res, safeSession(session));
     }
 
     return res.status(200).json({
