@@ -1,4 +1,11 @@
 import { clearSession, readSession, writeSession } from "./session.js";
+import {
+  loadLatestQboConnection,
+  loadQboConnection,
+  markQboDisconnected,
+  safeSession,
+  saveQboConnection,
+} from "./supabase.js";
 
 const AUTH_URL = "https://appcenter.intuit.com/connect/oauth2";
 const TOKEN_URL = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
@@ -76,14 +83,20 @@ export async function exchangeCode(code, realmId) {
 }
 
 export async function activeSession(req, res) {
-  let session = readSession(req);
+  const browserSession = readSession(req);
+  let session = browserSession?.realmId
+    ? await loadQboConnection(browserSession.realmId)
+    : await loadLatestQboConnection();
+
   if (!session?.accessToken || !session?.realmId) return null;
 
   if (session.accessTokenExpiresAt > Date.now() + 5 * 60 * 1000) {
+    writeSession(res, safeSession(session));
     return session;
   }
 
   if (!session.refreshToken || session.refreshTokenExpiresAt <= Date.now()) {
+    await markQboDisconnected(session.realmId);
     clearSession(res);
     return null;
   }
@@ -95,12 +108,14 @@ export async function activeSession(req, res) {
       refresh_token: session.refreshToken,
     });
   } catch {
+    await markQboDisconnected(session.realmId);
     clearSession(res);
     return null;
   }
 
   session = createSession(tokens, session.realmId, session);
-  writeSession(res, session);
+  await saveQboConnection(session);
+  writeSession(res, safeSession(session));
   return session;
 }
 
