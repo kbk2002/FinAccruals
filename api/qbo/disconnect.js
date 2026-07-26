@@ -1,8 +1,9 @@
+import { traceApiCall } from "../../server/logging.js";
 import { activeSession, revokeSession } from "../../server/qbo.js";
 import { clearSession } from "../../server/session.js";
 import { markQboDisconnected } from "../../server/supabase.js";
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Method not allowed." });
@@ -20,3 +21,5 @@ export default async function handler(req, res) {
   clearSession(res);
   return res.status(200).json({ success: true });
 }
+
+export default traceApiCall(handler);
