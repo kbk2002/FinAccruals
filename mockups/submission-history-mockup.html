@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Submission History — Mockup · FinAccruals LedgerFlow</title>
+  <style>
+    :root {
+      --bg:            #F8FAFC;
+      --bg-card:       #FFFFFF;
+      --bg-row-alt:    #F1F5F9;
+      --border:        #E2E8F0;
+      --border-strong: #CBD5E1;
+      --ink:           #0F172A;
+      --ink-2:         #334155;
+      --ink-muted:     #64748B;
+      --ink-faint:     #94A3B8;
+      --accent:        #0D9488;
+      --accent-dim:    #CCFBF1;
+
+      /* Status colours */
+      --s-posted:   #16A34A; --s-posted-bg:  #DCFCE7;
+      --s-pending:  #2563EB; --s-pending-bg: #DBEAFE;
+      --s-val:      #DC2626; --s-val-bg:     #FEE2E2;
+      --s-auth:     #EA580C; --s-auth-bg:    #FFEDD5;
+      --s-platform: #CA8A04; --s-platform-bg:#FEF9C3;
+      --s-network:  #64748B; --s-network-bg: #F1F5F9;
+
+      --radius: 8px;
+      --font-ui:   -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:#0B1017; --bg-card:#111827; --bg-row-alt:#161F2E;
+        --border:#1E2D3D; --border-strong:#2D3F52;
+        --ink:#F0F6FF; --ink-2:#CBD5E1; --ink-muted:#94A3B8; --ink-faint:#475569;
+        --accent:#14B8A6; --accent-dim:#0D3D38;
+        --s-posted:#4ADE80;  --s-posted-bg:#052E16;
+        --s-pending:#60A5FA; --s-pending-bg:#1E3A5F;
+        --s-val:#F87171;     --s-val-bg:#450A0A;
+        --s-auth:#FB923C;    --s-auth-bg:#431407;
+        --s-platform:#FDE047;--s-platform-bg:#422006;
+        --s-network:#94A3B8; --s-network-bg:#1E293B;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-ui); background: var(--bg); color: var(--ink); font-size: 13px; line-height: 1.5; min-height: 100vh; }
+
+    /* ── Mockup banner ── */
+    .mockup-banner {
+      background: #1E2A3A; color: #94A3B8;
+      font-size: 11px; text-align: center; padding: 6px; letter-spacing: .04em;
+    }
+    .mockup-banner strong { color: #F59E0B; }
+
+    /* ── App header ── */
+    .app-header {
+      background: var(--bg-card); border-bottom: 1px solid var(--border);
+      padding: 12px 24px; display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .app-logo { width:28px; height:28px; background:var(--accent); border-radius:6px; display:grid; place-items:center; color:#fff; font-size:14px; font-weight:800; letter-spacing:-1px; flex-shrink:0; }
+    .app-title { font-weight:700; font-size:14px; }
+    .app-sub   { font-size:11px; color:var(--ink-muted); }
+    .header-spacer { flex:1; }
+    .badge-sandbox { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; background:var(--accent-dim); color:var(--accent); padding:2px 10px; border-radius:20px; }
+
+    /* ── Page ── */
+    .page { padding: 20px 24px; max-width: 1280px; margin: 0 auto; }
+
+    .page-heading { display:flex; align-items:baseline; gap:10px; margin-bottom:16px; }
+    .page-heading h1 { font-size:18px; font-weight:700; letter-spacing:-.02em; }
+    .page-heading .subtitle { font-size:12px; color:var(--ink-muted); }
+    .btn-refresh { margin-left:auto; font-size:12px; font-weight:600; color:var(--accent); background:var(--accent-dim); border:none; border-radius:6px; padding:6px 12px; cursor:pointer; }
+
+    /* ── KPI cards ── */
+    .kpi-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:18px; }
+    .kpi-card  { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:14px 16px; }
+    .kpi-label { font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-muted); margin-bottom:6px; }
+    .kpi-value { font-family:var(--font-mono); font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); }
+    .kpi-value.green  { color: var(--s-posted); }
+    .kpi-value.red    { color: var(--s-val); }
+    .kpi-value.blue   { color: var(--s-pending); }
+    .kpi-sub   { font-size:10px; color:var(--ink-faint); margin-top:3px; }
+
+    /* ── Status legend ── */
+    .legend-row { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:14px; }
+    .legend-label { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-muted); margin-right:4px; }
+
+    /* ── Status pills ── */
+    .pill {
+      display:inline-flex; align-items:center; gap:5px;
+      font-size:10px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+      border-radius:20px; padding:3px 10px; white-space:nowrap;
+    }
+    .pill-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+
+    .pill-posted   { background:var(--s-posted-bg);   color:var(--s-posted);   } .pill-posted .pill-dot   { background:var(--s-posted); }
+    .pill-pending  { background:var(--s-pending-bg);  color:var(--s-pending);  } .pill-pending .pill-dot  { background:var(--s-pending); }
+    .pill-val      { background:var(--s-val-bg);      color:var(--s-val);      } .pill-val .pill-dot      { background:var(--s-val); }
+    .pill-auth     { background:var(--s-auth-bg);     color:var(--s-auth);     } .pill-auth .pill-dot     { background:var(--s-auth); }
+    .pill-platform { background:var(--s-platform-bg); color:var(--s-platform); } .pill-platform .pill-dot { background:var(--s-platform); }
+    .pill-network  { background:var(--s-network-bg);  color:var(--s-network);  } .pill-network .pill-dot  { background:var(--s-network); }
+
+    /* ── Filter bar ── */
+    .filter-bar {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius);
+      padding:14px 16px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;
+      margin-bottom:12px;
+    }
+    .filter-group  { display:flex; flex-direction:column; gap:4px; }
+    .filter-label  { font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-muted); }
+    .filter-select, .filter-input {
+      font-family:var(--font-ui); font-size:12px;
+      background:var(--bg); border:1px solid var(--border-strong); border-radius:6px;
+      padding:5px 9px; color:var(--ink); outline:none; min-width:130px;
+    }
+    .filter-select:focus, .filter-input:focus { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-dim); }
+    .filter-divider { width:1px; height:34px; background:var(--border); align-self:flex-end; margin:0 2px; }
+    .btn-apply { font-size:12px; font-weight:600; background:var(--accent); color:#fff; border:none; border-radius:6px; padding:6px 16px; cursor:pointer; align-self:flex-end; }
+    .btn-clear { font-size:12px; color:var(--ink-muted); background:none; border:none; cursor:pointer; align-self:flex-end; text-decoration:underline; padding:6px 2px; }
+
+    /* ── Active chips ── */
+    .active-filters { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; align-items:center; }
+    .chip-label { font-size:11px; color:var(--ink-muted); }
+    .chip { display:flex; align-items:center; gap:4px; font-size:11px; font-weight:600; background:var(--accent-dim); color:var(--accent); border-radius:20px; padding:2px 8px 2px 10px; }
+    .chip-x { cursor:pointer; opacity:.6; font-size:13px; line-height:1; }
+
+    /* ── Table card ── */
+    .table-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+    .table-toolbar { display:flex; align-items:center; padding:10px 14px; border-bottom:1px solid var(--border); gap:8px; }
+    .table-count { font-size:12px; color:var(--ink-muted); }
+    .table-count strong { color:var(--ink); }
+    .toolbar-spacer { flex:1; }
+    .btn-export { font-size:11px; color:var(--ink-muted); background:none; border:1px solid var(--border); border-radius:5px; padding:3px 10px; cursor:pointer; }
+
+    .tbl-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    thead th {
+      background:var(--bg-row-alt); padding:9px 12px; text-align:left;
+      font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+      color:var(--ink-muted); border-bottom:1px solid var(--border);
+      white-space:nowrap; cursor:pointer; user-select:none;
+    }
+    thead th:hover { color:var(--ink); }
+    thead th.sorted { color:var(--accent); }
+    thead th[style*="right"] { text-align:right; }
+
+    tbody tr { border-bottom:1px solid var(--border); transition:background .1s; cursor:pointer; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:var(--bg-row-alt); }
+    tbody tr.alt { background:var(--bg-row-alt); }
+    tbody tr.alt:hover { filter:brightness(.97); }
+
+    td { padding:9px 12px; vertical-align:middle; white-space:nowrap; }
+    td.stripe-cell { padding:0; width:3px; }
+    .stripe { display:block; width:3px; height:40px; border-radius:0 2px 2px 0; }
+
+    .cell-id   { font-family:var(--font-mono); font-size:11px; font-weight:600; color:var(--ink-2); }
+    .cell-date { font-family:var(--font-mono); font-size:11px; color:var(--ink-2); font-variant-numeric:tabular-nums; }
+    .cell-amt  { font-family:var(--font-mono); font-size:12px; font-variant-numeric:tabular-nums; font-weight:600; text-align:right; color:var(--ink); }
+    .cell-amt.zero { color:var(--ink-faint); font-weight:400; }
+    .cell-plat { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-2); font-weight:500; }
+    .plat-dot  { width:6px; height:6px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+    .plat-dot.xero { background:#1072BA; }
+    .cell-user { font-size:11px; color:var(--ink-muted); }
+    .cell-errmsg { font-size:11px; color:var(--ink-muted); max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+    .no-error  { color:var(--ink-faint); }
+
+    /* ── Pagination ── */
+    .pagination { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-top:1px solid var(--border); font-size:12px; }
+    .page-info  { color:var(--ink-muted); }
+    .page-controls { display:flex; gap:4px; }
+    .page-btn { font-size:12px; border:1px solid var(--border); border-radius:5px; padding:3px 10px; background:var(--bg); color:var(--ink-2); cursor:pointer; }
+    .page-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+    .page-btn:disabled { opacity:.4; cursor:default; }
+
+    /* ── Drawer ── */
+    .drawer-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; backdrop-filter:blur(2px); }
+    .drawer-overlay.open { display:block; }
+    .drawer { position:fixed; top:0; right:0; bottom:0; width:340px; background:var(--bg-card); border-left:1px solid var(--border); z-index:201; padding:20px; overflow-y:auto; transform:translateX(100%); transition:transform .2s ease; }
+    .drawer.open { transform:translateX(0); }
+    .drawer-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .drawer-title  { font-size:14px; font-weight:700; }
+    .drawer-close  { font-size:18px; color:var(--ink-muted); background:none; border:none; cursor:pointer; }
+    .drawer-section { margin-bottom:16px; }
+    .drawer-section-label { font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-muted); margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid var(--border); }
+    .drawer-row { display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border); font-size:12px; }
+    .drawer-row:last-child { border-bottom:none; }
+    .drawer-key { color:var(--ink-muted); }
+    .drawer-val { color:var(--ink); font-weight:600; font-family:var(--font-mono); font-size:11px; text-align:right; max-width:180px; word-break:break-word; white-space:normal; }
+
+    @media (max-width:800px) {
+      .kpi-strip { grid-template-columns:repeat(2,1fr); }
+      .filter-bar { flex-direction:column; }
+      .drawer { width:100%; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="mockup-banner">
+  <strong>WIREFRAME / MOCKUP</strong> — FinAccruals LedgerFlow &nbsp;·&nbsp; Submission History &nbsp;·&nbsp; Data Analyst Design Task
+</div>
+
+<header class="app-header">
+  <div class="app-logo">FA</div>
+  <div>
+    <div class="app-title">FinAccruals &nbsp;<span style="font-weight:400;color:var(--ink-muted)">/ LedgerFlow</span></div>
+    <div class="app-sub">Submission History — audit log of all journal entry submissions</div>
+  </div>
+  <div class="header-spacer"></div>
+  <span class="badge-sandbox">Sandbox</span>
+</header>
+
+<div class="page">
+
+  <div class="page-heading">
+    <h1>Submission History</h1>
+    <button class="btn-refresh" onclick="refresh()">↻ Refresh</button>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <div class="kpi-label">Total Submissions</div>
+      <div class="kpi-value">24</div>
+      <div class="kpi-sub">This period</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Posted</div>
+      <div class="kpi-value green">18</div>
+      <div class="kpi-sub">75% success rate</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Failed</div>
+      <div class="kpi-value red">4</div>
+      <div class="kpi-sub">Needs attention</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Pending</div>
+      <div class="kpi-value blue">2</div>
+      <div class="kpi-sub">Awaiting platform</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Value Posted</div>
+      <div class="kpi-value" style="font-size:18px">$48,250</div>
+      <div class="kpi-sub">Debit total (posted only)</div>
+    </div>
+  </div>
+
+  <!-- Status legend -->
+  <div class="legend-row">
+    <span class="legend-label">Status:</span>
+    <span class="pill pill-posted"><span class="pill-dot"></span>Posted</span>
+    <span class="pill pill-pending"><span class="pill-dot"></span>Pending</span>
+    <span class="pill pill-val"><span class="pill-dot"></span>Validation Error</span>
+    <span class="pill pill-auth"><span class="pill-dot"></span>Auth Error</span>
+    <span class="pill pill-platform"><span class="pill-dot"></span>Platform Error</span>
+    <span class="pill pill-network"><span class="pill-dot"></span>Network Error</span>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-label">Status</div>
+      <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+        <option value="">All statuses</option>
+        <option value="POSTED">Posted</option>
+        <option value="PENDING">Pending</option>
+        <option value="VALIDATION_ERROR">Validation Error</option>
+        <option value="AUTH_ERROR">Authentication Error</option>
+        <option value="PLATFORM_ERROR">Platform Error</option>
+        <option value="NETWORK_ERROR">Network Error</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Platform</div>
+      <select class="filter-select" id="filterPlatform" onchange="applyFilters()">
+        <option value="">All platforms</option>
+        <option value="QuickBooks">QuickBooks</option>
+        <option value="Xero">Xero</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <div class="filter-label">Submission Date — From</div>
+      <input type="date" class="filter-input" id="filterDateFrom" value="2026-07-01" onchange="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">To</div>
+      <input type="date" class="filter-input" id="filterDateTo" value="2026-07-20" onchange="applyFilters()">
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <div class="filter-label">Debit Min ($)</div>
+      <input type="number" class="filter-input" id="filterDebitMin" placeholder="0" style="min-width:90px;width:90px" onchange="applyFilters()">
+    </div>
+    <div class="filter-group">
+      <div class="filter-label">Debit Max ($)</div>
+      <input type="number" class="filter-input" id="filterDebitMax" placeholder="∞" style="min-width:90px;width:90px" onchange="applyFilters()">
+    </div>
+    <button class="btn-apply" onclick="applyFilters()">Apply</button>
+    <button class="btn-clear" onclick="clearFilters()">Clear</button>
+  </div>
+
+  <!-- Active filter chips -->
+  <div class="active-filters" id="activeFilters" style="display:none">
+    <span class="chip-label">Active filters:</span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-toolbar">
+      <span class="table-count">Showing <strong id="rowCount">8</strong> of 24 submissions</span>
+      <div class="toolbar-spacer"></div>
+      <button class="btn-export">↓ Export CSV</button>
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:3px;padding:0"></th>
+            <th class="sorted">Submission ID ↓</th>
+            <th>Journal Date ↕</th>
+            <th>Submission Date ↕</th>
+            <th>Platform ↕</th>
+            <th>Submitted By ↕</th>
+            <th style="text-align:right">Total Debit ↕</th>
+            <th style="text-align:right">Total Credit ↕</th>
+            <th>Status ↕</th>
+            <th>Error Message ↕</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <span class="page-info">Page 1 of 3 — 24 total records</span>
+      <div class="page-controls">
+        <button class="page-btn" disabled>‹ Prev</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">Next ›</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Detail drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title" id="drawerTitle">Submission Detail</div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div id="drawerContent"></div>
+</div>
+
+<script>
+const DATA = [
+  {
+    id:"FA-2026-0024", journalDate:"2026-07-18", subDate:"2026-07-18 14:32 UTC",
+    platform:"QuickBooks", user:"anupama@firm.com",
+    debit:12500, credit:12500, status:"POSTED", errorMsg:null
+  },
+  {
+    id:"FA-2026-0023", journalDate:"2026-07-17", subDate:"2026-07-17 11:05 UTC",
+    platform:"QuickBooks", user:"anupama@firm.com",
+    debit:0, credit:0, status:"VALIDATION_ERROR", errorMsg:"Debits and credits are not balanced"
+  },
+  {
+    id:"FA-2026-0022", journalDate:"2026-07-16", subDate:"2026-07-16 16:48 UTC",
+    platform:"QuickBooks", user:"raj@firm.com",
+    debit:8750, credit:8750, status:"POSTED", errorMsg:null
+  },
+  {
+    id:"FA-2026-0021", journalDate:"2026-07-15", subDate:"2026-07-15 09:22 UTC",
+    platform:"Xero", user:"priya@firm.com",
+    debit:3200, credit:3200, status:"PENDING", errorMsg:null
+  },
+  {
+    id:"FA-2026-0020", journalDate:"2026-07-14", subDate:"2026-07-14 17:01 UTC",
+    platform:"QuickBooks", user:"raj@firm.com",
+    debit:0, credit:0, status:"NETWORK_ERROR", errorMsg:"Connection lost during submission"
+  },
+  {
+    id:"FA-2026-0019", journalDate:"2026-07-12", subDate:"2026-07-12 10:15 UTC",
+    platform:"QuickBooks", user:"anupama@firm.com",
+    debit:5000, credit:5000, status:"POSTED", errorMsg:null
+  },
+  {
+    id:"FA-2026-0018", journalDate:"2026-07-10", subDate:"2026-07-10 14:55 UTC",
+    platform:"QuickBooks", user:"anupama@firm.com",
+    debit:0, credit:0, status:"PLATFORM_ERROR", errorMsg:"Account '5100-Expenses' not found in QuickBooks"
+  },
+  {
+    id:"FA-2026-0017", journalDate:"2026-07-08", subDate:"2026-07-08 08:30 UTC",
+    platform:"QuickBooks", user:"raj@firm.com",
+    debit:0, credit:0, status:"AUTH_ERROR", errorMsg:"QuickBooks session expired — please reconnect"
+  },
+];
+
+const STATUS_META = {
+  POSTED:           { cls:"pill-posted",   stripe:"#16A34A", label:"Posted" },
+  PENDING:          { cls:"pill-pending",  stripe:"#2563EB", label:"Pending" },
+  VALIDATION_ERROR: { cls:"pill-val",      stripe:"#DC2626", label:"Validation Error" },
+  AUTH_ERROR:       { cls:"pill-auth",     stripe:"#EA580C", label:"Auth Error" },
+  PLATFORM_ERROR:   { cls:"pill-platform", stripe:"#CA8A04", label:"Platform Error" },
+  NETWORK_ERROR:    { cls:"pill-network",  stripe:"#64748B", label:"Network Error" },
+};
+
+let filtered = [...DATA];
+
+function fmt(n) {
+  if (!n) return "—";
+  return "$" + n.toLocaleString("en-US", { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+function statusPill(status) {
+  const m = STATUS_META[status] || { cls:"pill-network", label:status };
+  return `<span class="pill ${m.cls}"><span class="pill-dot"></span>${m.label}</span>`;
+}
+
+function renderTable() {
+  const tbody = document.getElementById("tableBody");
+  document.getElementById("rowCount").textContent = filtered.length;
+  tbody.innerHTML = filtered.map((r, i) => {
+    const m = STATUS_META[r.status] || { stripe:"#94A3B8" };
+    return `
+    <tr class="${i%2===1?'alt':''}" onclick="openDrawer(${i})">
+      <td class="stripe-cell"><span class="stripe" style="background:${m.stripe}"></span></td>
+      <td class="cell-id">${r.id}</td>
+      <td class="cell-date">${r.journalDate}</td>
+      <td class="cell-date">${r.subDate}</td>
+      <td><div class="cell-plat"><span class="plat-dot ${r.platform==='Xero'?'xero':''}"></span>${r.platform}</div></td>
+      <td class="cell-user">${r.user}</td>
+      <td class="cell-amt ${!r.debit?'zero':''}">${fmt(r.debit)}</td>
+      <td class="cell-amt ${!r.credit?'zero':''}">${fmt(r.credit)}</td>
+      <td>${statusPill(r.status)}</td>
+      <td class="cell-errmsg">${r.errorMsg ? `<span title="${r.errorMsg}">${r.errorMsg}</span>` : '<span class="no-error">—</span>'}</td>
+    </tr>`;
+  }).join("");
+}
+
+function applyFilters() {
+  const status   = document.getElementById("filterStatus").value;
+  const platform = document.getElementById("filterPlatform").value;
+  const from     = document.getElementById("filterDateFrom").value;
+  const to       = document.getElementById("filterDateTo").value;
+  const dMin     = parseFloat(document.getElementById("filterDebitMin").value) || 0;
+  const dMax     = parseFloat(document.getElementById("filterDebitMax").value) || Infinity;
+
+  filtered = DATA.filter(r => {
+    if (status   && r.status   !== status)               return false;
+    if (platform && r.platform !== platform)             return false;
+    if (from && r.subDate.slice(0,10) < from)            return false;
+    if (to   && r.subDate.slice(0,10) > to)              return false;
+    if (r.debit > 0 && (r.debit < dMin || r.debit > dMax)) return false;
+    return true;
+  });
+  renderTable();
+
+  const el = document.getElementById("activeFilters");
+  const chips = [];
+  const statusLabels = {
+    POSTED:"Posted", PENDING:"Pending", VALIDATION_ERROR:"Validation Error",
+    AUTH_ERROR:"Auth Error", PLATFORM_ERROR:"Platform Error", NETWORK_ERROR:"Network Error"
+  };
+  if (status)   chips.push(chip(`Status: ${statusLabels[status]||status}`, "filterStatus"));
+  if (platform) chips.push(chip(`Platform: ${platform}`, "filterPlatform"));
+  if (from)     chips.push(chip(`From: ${from}`, "filterDateFrom"));
+  if (to)       chips.push(chip(`To: ${to}`, "filterDateTo"));
+  if (dMin > 0) chips.push(chip(`Debit ≥ $${dMin}`, "filterDebitMin"));
+  if (dMax < Infinity) chips.push(chip(`Debit ≤ $${dMax}`, "filterDebitMax"));
+
+  el.style.display = chips.length ? "flex" : "none";
+  el.innerHTML = '<span class="chip-label">Active filters:</span>' + chips.join("");
+}
+
+function chip(label, id) {
+  return `<span class="chip">${label} <span class="chip-x" onclick="clearFilter('${id}')">×</span></span>`;
+}
+
+function clearFilter(id) { document.getElementById(id).value = ""; applyFilters(); }
+
+function clearFilters() {
+  ["filterStatus","filterPlatform","filterDateFrom","filterDateTo","filterDebitMin","filterDebitMax"]
+    .forEach(id => document.getElementById(id).value = "");
+  filtered = [...DATA];
+  renderTable();
+  document.getElementById("activeFilters").style.display = "none";
+}
+
+function refresh() { filtered = [...DATA]; renderTable(); }
+
+function openDrawer(i) {
+  const r = filtered[i];
+  document.getElementById("drawerTitle").textContent = r.id;
+  document.getElementById("drawerContent").innerHTML = `
+    <div class="drawer-section">
+      <div class="drawer-section-label">Status</div>
+      <div class="drawer-row"><span class="drawer-key">Status</span><span>${statusPill(r.status)}</span></div>
+      ${r.errorMsg ? `<div class="drawer-row"><span class="drawer-key">Error Message</span><span class="drawer-val" style="font-family:var(--font-ui)">${r.errorMsg}</span></div>` : ""}
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-label">Submission</div>
+      <div class="drawer-row"><span class="drawer-key">Submission ID</span><span class="drawer-val">${r.id}</span></div>
+      <div class="drawer-row"><span class="drawer-key">Platform</span><span class="drawer-val">${r.platform}</span></div>
+      <div class="drawer-row"><span class="drawer-key">Submitted By</span><span class="drawer-val">${r.user}</span></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-label">Dates</div>
+      <div class="drawer-row"><span class="drawer-key">Journal Date</span><span class="drawer-val">${r.journalDate}</span></div>
+      <div class="drawer-row"><span class="drawer-key">Submitted At</span><span class="drawer-val">${r.subDate}</span></div>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-label">Amounts</div>
+      <div class="drawer-row"><span class="drawer-key">Total Debit</span><span class="drawer-val">${fmt(r.debit)}</span></div>
+      <div class="drawer-row"><span class="drawer-key">Total Credit</span><span class="drawer-val">${fmt(r.credit)}</span></div>
+    </div>
+  `;
+  document.getElementById("drawerOverlay").classList.add("open");
+  document.getElementById("drawer").classList.add("open");
+}
+
+function closeDrawer() {
+  document.getElementById("drawerOverlay").classList.remove("open");
+  document.getElementById("drawer").classList.remove("open");
+}
+
+renderTable();
+</script>
+</body>
+</html>
